@@ -1,16 +1,16 @@
 """
 DB 模組：封裝 SQLAlchemy Engine 與 Session 工廠。
-支援 PostgreSQL / MySQL / SQLite，URL 以 settings.DB_URL 決定。
+支援 PostgreSQL / MySQL / SQLite，URL 以 settings.DATABASE_URL 決定。
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.infra.settings import settings
 
 # connect_args 僅用於 SQLite（多執行緒設定）
-_connect_args = {"check_same_thread": False} if settings.DB_URL.startswith("sqlite") else {}
+_connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(
-    settings.DB_URL,
+    settings.DATABASE_URL,
     echo=False,
     connect_args=_connect_args,
 )

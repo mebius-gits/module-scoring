@@ -26,6 +26,8 @@ from app.controllers.api_v1 import patient_fields_controller
 from app.controllers.ai_v1 import scoring_controller
 from app.controllers.api_v2 import items_controller as items_v2_controller
 
+from app.infra.settings import settings as _settings
+
 # ── 確保所有 ORM Model 在 Base.metadata 中註冊 ─────────────────
 from app.infra.db import Base, engine, SessionLocal
 from app.repositories.department_repo import DepartmentModel  # noqa: F401
@@ -40,6 +42,7 @@ app = FastAPI(
     title="Module Scoring API",
     description="醫療評分公式管理系統 API",
     version="1.0.0",
+    root_path=_settings.ROOT_PATH,
     docs_url=None,        # 關閉預設 /docs
     redoc_url=None,       # 關閉預設 /redoc
 )
@@ -152,16 +155,6 @@ def _build_filtered_openapi(spec_key: str) -> dict:
     }
 
 
-@app.get("/openapi-v1.json", include_in_schema=False)
-async def openapi_v1():
-    return _build_filtered_openapi("v1")
-
-
-@app.get("/openapi-v2.json", include_in_schema=False)
-async def openapi_v2():
-    return _build_filtered_openapi("v2")
-
-
 # ── 自訂 Swagger UI：版本下拉選單 ────────────────────────────
 _SWAGGER_UI_HTML = """
 <!DOCTYPE html>
@@ -190,9 +183,19 @@ SwaggerUIBundle({
 """
 
 
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui():
-    return HTMLResponse(_SWAGGER_UI_HTML)
+if _settings.ENABLE_SWAGGER_UI:
+    @app.get("/docs", include_in_schema=False)
+    async def custom_swagger_ui():
+        return HTMLResponse(_SWAGGER_UI_HTML)
+
+    @app.get("/openapi-v1.json", include_in_schema=False)
+    async def _openapi_v1_ui():
+        return _build_filtered_openapi("v1")
+
+    @app.get("/openapi-v2.json", include_in_schema=False)
+    async def _openapi_v2_ui():
+        return _build_filtered_openapi("v2")
+
 
 # ── 掛載前端靜態檔案 ─────────────────────────────────────────
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"

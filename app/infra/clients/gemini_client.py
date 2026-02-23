@@ -10,8 +10,7 @@ class GeminiClient:
     """封裝 Google GenAI SDK，統一管理 API 金鑰與 Model 設定"""
 
     def __init__(self):
-        # 若 GOOGLE_API_KEY 為空，SDK 會自動使用環境變數 GEMINI_API_KEY
-        api_key = settings.GOOGLE_API_KEY or None
+        api_key = settings.GEMINI_API_KEY or None
         self.client = genai.Client(api_key=api_key)
         self.model = settings.GEMINI_MODEL
 

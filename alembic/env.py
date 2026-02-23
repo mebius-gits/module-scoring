@@ -1,6 +1,6 @@
 """
 Alembic migration env.py
-自動讀取 app/infra/settings.py 的 DB_URL，無需在 alembic.ini 硬寫連線字串。
+自動讀取 app/infra/settings.py 的 DATABASE_URL，無需在 alembic.ini 硬寫連線字串。
 """
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
@@ -17,7 +17,7 @@ from app.infra.db import Base
 # 匯入所有 ORM Model 讓 autogenerate 可偵測
 from app.repositories.item_repo import ItemModel  # noqa: F401
 
-config.set_main_option("sqlalchemy.url", settings.DB_URL)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 target_metadata = Base.metadata
 
 

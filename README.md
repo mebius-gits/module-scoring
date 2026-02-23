@@ -88,10 +88,11 @@ pip install -r requirements.txt
 建立 `.env` 檔案：
 
 ```env
-GOOGLE_API_KEY=your_gemini_api_key
-DB_URL=sqlite:///./app.db
+GEMINI_API_KEY=your_gemini_api_key
+DATABASE_URL=sqlite:///./app.db
 AI_HEADER_KEY=changeme
 GEMINI_MODEL=gemini-2.5-flash
+ROOT_PATH=
 ```
 
 ### 3. 啟動服務
