@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫療評分系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">MS</div>
+            <h1>醫療評分系統</h1>
+            <span class="badge">Workbench</span>
+        </div>
+        <nav class="header-nav">
+            <button class="nav-tab active" data-tab="chat" onclick="switchTab('chat')">AI 聊天</button>
+            <button class="nav-tab" data-tab="departments" onclick="switchTab('departments')">科別管理</button>
+            <button class="nav-tab" data-tab="formulas" onclick="switchTab('formulas')">公式管理</button>
+        </nav>
+        <div class="header-right">
+            <span class="status-dot" id="statusDot"></span>
+        </div>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- TAB: AI Chat -->
+    <!-- ============================================================ -->
+    <main id="tab-chat" class="tab-content active">
+        <div class="chat-layout">
+            <!-- Chat Messages -->
+            <div class="chat-main">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-welcome">
+                        <div class="welcome-icon">AI</div>
+                        <h2>醫療 AI 助手</h2>
+                        <p>您好！我可以幫您生成醫療評分公式，或回答醫療相關問題。<br>試試輸入：「幫我建立 SOFA 評分系統」</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-input-wrapper">
+                        <textarea id="chatInput" rows="1" placeholder="輸入訊息，按 Enter 發送（Shift+Enter 換行）..."
+                            onkeydown="handleChatKeydown(event)"
+                            oninput="autoResizeChatInput(this)"></textarea>
+                        <button class="chat-send-btn" onclick="sendChat()" id="chatSendBtn">
+                            <span>&gt;</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Side: YAML Preview -->
+            <aside class="chat-sidebar" id="chatSidebar">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>生成的 YAML 公式</span>
+                        <button class="btn btn-text btn-sm" onclick="clearChatYaml()">清除</button>
+                    </div>
+                    <div class="panel-body" style="padding:0">
+                        <textarea id="chatYamlPreview" class="yaml-canvas" readonly
+                            placeholder="AI 生成的公式將顯示在此..."></textarea>
+                    </div>
+                    <div class="panel-footer">
+                        <button class="btn btn-primary full-width" onclick="saveChatYamlToFormula()"
+                            id="btnSaveChatYaml" disabled>
+                            儲存為公式
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- TAB: Departments -->
+    <!-- ============================================================ -->
+    <main id="tab-departments" class="tab-content">
+        <div class="manage-layout">
+            <div class="manage-toolbar">
+                <h2>科別管理</h2>
+                <button class="btn btn-primary" onclick="showCreateDeptModal()">
+                    <span class="btn-icon">+</span> 新增科別
+                </button>
+            </div>
+            <div class="manage-grid" id="deptGrid">
+                <div class="empty-state">載入中...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- TAB: Formulas -->
+    <!-- ============================================================ -->
+    <main id="tab-formulas" class="tab-content">
+        <div class="formulas-layout">
+            <!-- Left: Formula List -->
+            <aside class="formula-list-col">
+                <div class="panel" style="flex:1;min-height:0">
+                    <div class="panel-header">
+                        <span>公式列表</span>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <select id="formulaDeptFilter" onchange="loadDbFormulas()" class="select-sm">
+                                <option value="">全部科別</option>
+                            </select>
+                            <button class="btn btn-text btn-sm" onclick="loadDbFormulas()">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="panel-body" id="dbFormulasList">
+                        <div class="empty-state">載入中...</div>
+                    </div>
+                </div>
+            </aside>
+            <!-- Center: Detail -->
+            <section class="formula-detail-col">
+                <div class="panel" style="flex:1;min-height:0">
+                    <div class="panel-header" style="justify-content:space-between;display:flex">
+                        <span>公式詳細 <span id="formulaDetailName"
+                                style="color:var(--accent);font-weight:700"></span></span>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn btn-secondary btn-sm" onclick="showCreateFormulaModal()">+ 新增公式
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding:0;display:flex;flex-direction:column;min-height:0;flex:1">
+                        <div style="flex:1;display:flex;flex-direction:column;border-bottom:1px solid var(--border);min-height:0;overflow:hidden">
+                            <div class="sub-header">YAML 公式內容</div>
+                            <textarea id="formulaDetailYaml" class="yaml-canvas"
+                                style="flex:1;border:none;resize:none;min-height:0" readonly
+                                placeholder="選擇左側公式以檢視..."></textarea>
+                        </div>
+                        <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+                            <div class="sub-header">JSON AST</div>
+                            <textarea id="formulaDetailAst" class="yaml-canvas"
+                                style="flex:1;border:none;resize:none;min-height:0;background:var(--surface-alt);color:var(--text-secondary)" readonly
+                                placeholder="AST 結構..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Right: Calculate -->
+            <aside class="formula-calc-col">
+                <div class="panel">
+                    <div class="panel-header">病人資料 (測試計算)</div>
+                    <div class="panel-body">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                            <button class="btn btn-secondary btn-sm" onclick="parseFormulaVars()">解析變數</button>
+                            <button id="calcSubmitBtn" class="btn btn-primary btn-sm hidden"
+                                onclick="calculateScore()">計算分數</button>
+                        </div>
+                        <div id="calcVarsForm" class="vars-form hidden"></div>
+                        <div id="noVarsMessage" class="empty-state">請先選擇公式並解析變數</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header">評分結果</div>
+                    <div class="panel-body" id="calcResult" style="background:#fafafa">
+                        <div class="empty-state" style="margin-top:20px">尚無計算結果</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- Modal: Create Department -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay hidden" id="modalCreateDept">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新增科別</h3>
+                <button class="modal-close" onclick="closeModal('modalCreateDept')">x</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>科別名稱 *</label>
+                    <input type="text" id="deptNameInput" placeholder="例如：心臟內科" maxlength="255">
+                </div>
+                <div class="form-group">
+                    <label>描述 (選填)</label>
+                    <textarea id="deptDescInput" rows="3" placeholder="科別描述..." maxlength="500"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalCreateDept')">取消</button>
+                <button class="btn btn-primary" onclick="createDepartment()">建立</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- Modal: Create / Save Formula -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay hidden" id="modalCreateFormula">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3 id="formulaModalTitle">新增公式</h3>
+                <button class="modal-close" onclick="closeModal('modalCreateFormula')">x</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label>歸屬科別 *</label>
+                        <select id="formulaDeptSelect" class="select-full"></select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>公式名稱 *</label>
+                        <input type="text" id="formulaNameInput" placeholder="例如：SOFA Score" maxlength="255">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>描述 (選填)</label>
+                    <input type="text" id="formulaDescInput" placeholder="公式描述" maxlength="500">
+                </div>
+                <div class="form-group">
+                    <label>YAML 公式內容 *</label>
+                    <textarea id="formulaYamlInput" rows="12" class="mono-input"
+                        placeholder="貼上 YAML 公式，或從 AI 聊天取得..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalCreateFormula')">取消</button>
+                <button class="btn btn-primary" onclick="createFormula()">建立公式</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p style="font-size:13px;font-weight:600;color:var(--text-primary);margin-top:8px">處理中...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
