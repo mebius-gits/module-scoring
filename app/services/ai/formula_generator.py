@@ -136,7 +136,14 @@ class FormulaGenerator:
 
 DECIDE based on the user's message:
 - If the user is asking a QUESTION, making SMALL TALK, requesting EXPLANATION, or saying something non-formula → reply conversationally in Traditional Chinese (繁體中文). Do NOT generate a formula.
-- If the user is REQUESTING A FORMULA or scoring system → reply conversationally AND include the formula using the markers below.
+- If the user is REQUESTING A FORMULA or scoring system → reply with a DETAILED INTRODUCTION of the formula AND include the formula using the markers below.
+
+WHEN GENERATING A FORMULA, your conversational reply MUST include:
+1. 公式名稱與臨床用途（這個評分用在什麼場景）
+2. 評分組成說明（包含哪些變數、各自代表什麼意義）
+3. 計分邏輯簡述（如何累加分數）
+4. 風險分級說明（各分數區間對應的風險等級與建議）
+This introduction should appear BEFORE the FORMULA_START marker so the user understands what the formula does.
 
 User's message: {user_message}
 {patient_fields_hint}
