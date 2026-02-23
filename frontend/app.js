@@ -10,6 +10,7 @@ let formulas = [];
 let selectedFormulaId = null;
 let selectedFormulaYaml = "";
 let chatYaml = ""; // latest YAML from chat
+let chatAttachments = []; // attached files [{filename, content}]
 
 // ── Init ───────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -99,7 +100,7 @@ async function apiFetch(path, options = {}) {
 
 async function loadDepartments(silentForFilter = false) {
   try {
-    departments = await apiFetch("/api/v1/departments");
+    departments = await apiFetch("/v1/departments");
     if (!silentForFilter) renderDeptGrid();
     populateDeptSelects();
   } catch (e) {
@@ -167,7 +168,7 @@ async function createDepartment() {
 
   try {
     showLoading();
-    await apiFetch("/api/v1/departments", {
+    await apiFetch("/v1/departments", {
       method: "POST",
       body: JSON.stringify({ name, description: desc || null }),
     });
@@ -186,7 +187,7 @@ async function deleteDepartment(id, name) {
     return;
   try {
     showLoading();
-    await apiFetch(`/api/v1/departments/${id}`, { method: "DELETE" });
+    await apiFetch(`/v1/departments/${id}`, { method: "DELETE" });
     showToast("科別已刪除", "success");
     await loadDepartments();
     await loadDbFormulas();
@@ -205,7 +206,7 @@ async function loadDbFormulas() {
   const deptId = document.getElementById("formulaDeptFilter").value;
   const qs = deptId ? `?department_id=${deptId}` : "";
   try {
-    formulas = await apiFetch(`/api/v1/formulas${qs}`);
+    formulas = await apiFetch(`/v1/formulas${qs}`);
     renderFormulaList();
   } catch (e) {
     showToast("載入公式失敗: " + e.message, "error");
@@ -261,7 +262,7 @@ async function deleteFormula(id, name) {
   if (!confirm(`確定要刪除公式「${name}」嗎？`)) return;
   try {
     showLoading();
-    await apiFetch(`/api/v1/formulas/${id}`, { method: "DELETE" });
+    await apiFetch(`/v1/formulas/${id}`, { method: "DELETE" });
     showToast("公式已刪除", "success");
     if (selectedFormulaId === id) {
       selectedFormulaId = null;
@@ -303,7 +304,7 @@ async function createFormula() {
     // Convert YAML to AST first
     let astData = {};
     try {
-      const astRes = await apiFetch("/api/v1/formulas/convert-to-ast", {
+      const astRes = await apiFetch("/v1/formulas/convert-to-ast", {
         method: "POST",
         body: JSON.stringify({ yaml_content: yaml }),
       });
@@ -313,7 +314,7 @@ async function createFormula() {
       console.warn("AST conversion failed, using empty ast_data");
     }
 
-    await apiFetch(`/api/v1/departments/${deptId}/formulas`, {
+    await apiFetch(`/v1/departments/${deptId}/formulas`, {
       method: "POST",
       body: JSON.stringify({
         name,
@@ -343,7 +344,7 @@ async function parseFormulaVars() {
 
   try {
     showLoading();
-    const data = await apiFetch("/api/v1/formulas/extract-variables", {
+    const data = await apiFetch("/v1/formulas/extract-variables", {
       method: "POST",
       body: JSON.stringify({ yaml_content: yaml }),
     });
@@ -417,7 +418,7 @@ async function calculateScore() {
 
   try {
     showLoading();
-    const data = await apiFetch("/api/v1/formulas/calculate", {
+    const data = await apiFetch("/v1/formulas/calculate", {
       method: "POST",
       body: JSON.stringify({ yaml_content: yaml, variables }),
     });
@@ -495,18 +496,27 @@ function autoResizeChatInput(el) {
 async function sendChat() {
   const input = document.getElementById("chatInput");
   const msg = input.value.trim();
-  if (!msg) return;
+  if (!msg && !chatAttachments.length) return;
 
-  // Clear input
+  // Collect attachments
+  const attachments = chatAttachments.length ? [...chatAttachments] : null;
+  const attachNames = attachments ? attachments.map(a => a.filename) : [];
+
+  // Clear input & attachments
   input.value = "";
   input.style.height = "auto";
+  clearChatAttachments();
 
   // Remove welcome message
   const welcome = document.querySelector(".chat-welcome");
   if (welcome) welcome.remove();
 
-  // Add user bubble
-  appendChatMsg("user", msg);
+  // Add user bubble (show attached file names if any)
+  let displayMsg = msg;
+  if (attachNames.length) {
+    displayMsg += "\n[" + attachNames.join(", ") + "]";
+  }
+  appendChatMsg("user", displayMsg);
 
   // Add typing indicator
   const typingEl = appendTypingIndicator();
@@ -516,9 +526,12 @@ async function sendChat() {
   btn.disabled = true;
 
   try {
-    const data = await apiFetch("/ai/v1/chat", {
+    const body = { message: msg || "(see attached files)" };
+    if (attachments) body.attachments = attachments;
+
+    const data = await apiFetch("/v1/ai/chat", {
       method: "POST",
-      body: JSON.stringify({ message: msg }),
+      body: JSON.stringify(body),
     });
 
     // Remove typing
@@ -589,6 +602,89 @@ function clearChatYaml() {
   chatYaml = "";
   document.getElementById("chatYamlPreview").value = "";
   document.getElementById("btnSaveChatYaml").disabled = true;
+}
+
+// ================================================================
+//  FILE ATTACHMENTS
+// ================================================================
+
+function handleFileAttach(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  const MAX_SIZE = 2 * 1024 * 1024; // 2MB for docx
+
+  files.forEach((file) => {
+    if (file.size > MAX_SIZE) {
+      showToast(`${file.name} too large (max 2MB)`, "error");
+      return;
+    }
+
+    const isDocx = file.name.toLowerCase().endsWith(".docx");
+
+    if (isDocx) {
+      // Use mammoth.js to extract text from DOCX
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+          chatAttachments.push({
+            filename: file.name,
+            content: result.value,
+          });
+          renderChatAttachments();
+        } catch (err) {
+          showToast(`${file.name} DOCX parsing failed`, "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Plain text files
+      if (file.size > 512 * 1024) {
+        showToast(`${file.name} too large (max 512KB)`, "error");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        chatAttachments.push({
+          filename: file.name,
+          content: e.target.result,
+        });
+        renderChatAttachments();
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  // Reset input so same file can be re-selected
+  event.target.value = "";
+}
+
+function removeChatAttachment(index) {
+  chatAttachments.splice(index, 1);
+  renderChatAttachments();
+}
+
+function clearChatAttachments() {
+  chatAttachments = [];
+  renderChatAttachments();
+}
+
+function renderChatAttachments() {
+  const el = document.getElementById("chatAttachments");
+  if (!chatAttachments.length) {
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = chatAttachments
+    .map(
+      (a, i) => `
+      <span class="attach-badge">
+        <span class="attach-badge-name" title="${escHtml(a.filename)}">${escHtml(a.filename)}</span>
+        <button onclick="removeChatAttachment(${i})" title="移除">x</button>
+      </span>`
+    )
+    .join("");
 }
 
 function saveChatYamlToFormula() {

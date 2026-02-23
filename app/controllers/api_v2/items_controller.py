@@ -1,5 +1,5 @@
 """
-/api/v1/items Controller：HTTP 路由定義，處理 request/response，不含商業邏輯。
+/api/v2/items Controller：v2 版本 HTTP 路由定義，處理 request/response，不含商業邏輯。
 以 FastAPI Dependency Injection 注入 ItemService，捕捉 Domain 例外並轉換 HTTP status。
 """
 from typing import List
@@ -12,7 +12,7 @@ from app.models.items import ItemCreate, ItemResponse, ItemUpdate
 from app.repositories.item_repo import ItemRepo
 from app.services.item_service import ItemService
 
-router = APIRouter(prefix="/v1/items", tags=["Items"])
+router = APIRouter(prefix="/v2/items", tags=["Items V2"])
 
 
 def get_item_service(db: Session = Depends(get_db)) -> ItemService:

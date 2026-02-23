@@ -46,6 +46,7 @@ class ScoringService:
         self,
         message: str,
         patient_fields: list[dict] | None = None,
+        attachments: list[dict] | None = None,
     ) -> ChatResponse:
         """
         混合模式聊天：AI 自動判斷一般對話或公式生成請求。
@@ -54,12 +55,14 @@ class ScoringService:
         Args:
             message: 使用者自然語言訊息
             patient_fields: 從 DB 讀取的病人欄位列表（提供 AI 變數名稱提示）
+            attachments: 使用者附加的檔案列表
         Returns:
             ChatResponse: 包含 reply + 可選 generated_yaml
         """
         reply_text, yaml_content = self.formula_generator.chat(
             message=message,
             patient_fields=patient_fields,
+            attachments=attachments,
         )
 
         return ChatResponse(

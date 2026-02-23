@@ -26,7 +26,7 @@ from app.services.ai.scoring_service import ScoringService
 
 from typing import Dict, Any
 
-router = APIRouter(prefix="/api/v1", tags=["API v1 - Formulas"])
+router = APIRouter(prefix="/v1", tags=["Formulas"])
 
 
 def get_formula_service(db: Session = Depends(get_db)) -> FormulaService:

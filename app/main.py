@@ -1,13 +1,14 @@
 """
 FastAPI 應用程式進入點。
 職責：建立 app 物件、掛載全域 Exception Handlers、Include 各路由。
+使用 Swagger UI 下拉選單切換 API 版本。
 """
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.common.exceptions import (
@@ -23,6 +24,7 @@ from app.controllers.api_v1 import departments_controller
 from app.controllers.api_v1 import formulas_controller
 from app.controllers.api_v1 import patient_fields_controller
 from app.controllers.ai_v1 import scoring_controller
+from app.controllers.api_v2 import items_controller as items_v2_controller
 
 # ── 確保所有 ORM Model 在 Base.metadata 中註冊 ─────────────────
 from app.infra.db import Base, engine, SessionLocal
@@ -33,11 +35,13 @@ from app.repositories.patient_field_repo import PatientFieldModel  # noqa: F401
 # ── 開發用：自動建立資料表（正式環境請改用 Alembic）
 Base.metadata.create_all(bind=engine)
 
-# ── 建立 FastAPI App ──────────────────────────────────────────
+# ── 建立 FastAPI App（關閉預設 docs，改用自訂版本選單）──────────
 app = FastAPI(
-    title="Clean Architecture FastAPI",
-    description="前端互動 API (/api/v1) 與 AI 任務 API (/ai/v1) 分離設計",
+    title="Module Scoring API",
+    description="醫療評分公式管理系統 API",
     version="1.0.0",
+    docs_url=None,        # 關閉預設 /docs
+    redoc_url=None,       # 關閉預設 /redoc
 )
 
 # ── CORS（開發用，允許前端跨域呼叫）──────────────────────────
@@ -72,14 +76,123 @@ async def validation_handler(request: Request, exc: ValidationException):
 
 
 # ── 掛載路由 ─────────────────────────────────────────────────
-# 前端互動 API（/api/v1）
-app.include_router(items_controller.router)
+# V1：科別、公式、病人欄位、AI 聊天
 app.include_router(departments_controller.router)
 app.include_router(formulas_controller.router)
 app.include_router(patient_fields_controller.router)
-
-# AI 任務 API（/ai/v1）
 app.include_router(scoring_controller.router)
+
+# V2：Items
+app.include_router(items_v2_controller.router)
+
+
+# ── 版本分組定義 ─────────────────────────────────────────────
+_VERSION_SPECS = {
+    "v1": {
+        "title": "Module Scoring API - V1",
+        "description": "科別、公式、病人欄位管理 + AI 聊天",
+        "version": "1.0.0",
+        "path_prefixes": ["/v1/"],
+    },
+    "v2": {
+        "title": "Module Scoring API - V2",
+        "description": "Items CRUD",
+        "version": "2.0.0",
+        "path_prefixes": ["/v2/"],
+    },
+}
+
+
+def _build_filtered_openapi(spec_key: str) -> dict:
+    """根據路徑前綴過濾完整 OpenAPI schema，產出版本專屬 spec。"""
+    full = app.openapi()
+    cfg = _VERSION_SPECS[spec_key]
+    prefixes = cfg["path_prefixes"]
+
+    # 過濾 paths
+    filtered_paths = {
+        path: ops
+        for path, ops in full.get("paths", {}).items()
+        if any(path.startswith(p) for p in prefixes)
+    }
+
+    # 收集被引用的 schemas
+    import json
+    paths_json = json.dumps(filtered_paths)
+    used_schemas = set()
+    for schema_name in full.get("components", {}).get("schemas", {}):
+        if f'"#/components/schemas/{schema_name}"' in paths_json:
+            used_schemas.add(schema_name)
+
+    # 遞迴收集巢狀引用
+    all_schemas = full.get("components", {}).get("schemas", {})
+    to_check = list(used_schemas)
+    while to_check:
+        name = to_check.pop()
+        schema_json = json.dumps(all_schemas.get(name, {}))
+        for other_name in all_schemas:
+            if other_name not in used_schemas:
+                if f'"#/components/schemas/{other_name}"' in schema_json:
+                    used_schemas.add(other_name)
+                    to_check.append(other_name)
+
+    filtered_schemas = {
+        k: v for k, v in all_schemas.items() if k in used_schemas
+    }
+
+    return {
+        "openapi": full.get("openapi", "3.1.0"),
+        "info": {
+            "title": cfg["title"],
+            "description": cfg["description"],
+            "version": cfg["version"],
+        },
+        "paths": filtered_paths,
+        "components": {"schemas": filtered_schemas} if filtered_schemas else {},
+    }
+
+
+@app.get("/openapi-v1.json", include_in_schema=False)
+async def openapi_v1():
+    return _build_filtered_openapi("v1")
+
+
+@app.get("/openapi-v2.json", include_in_schema=False)
+async def openapi_v2():
+    return _build_filtered_openapi("v2")
+
+
+# ── 自訂 Swagger UI：版本下拉選單 ────────────────────────────
+_SWAGGER_UI_HTML = """
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Module Scoring API</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"/>
+</head><body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+<script>
+SwaggerUIBundle({
+    urls: [
+        {url: "/openapi-v1.json", name: "V1 - Scoring System"},
+        {url: "/openapi-v2.json", name: "V2 - Items"}
+    ],
+    "urls.primaryName": "V1 - Scoring System",
+    dom_id: "#swagger-ui",
+    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+    layout: "StandaloneLayout"
+});
+</script>
+</body></html>
+"""
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui():
+    return HTMLResponse(_SWAGGER_UI_HTML)
 
 # ── 掛載前端靜態檔案 ─────────────────────────────────────────
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"

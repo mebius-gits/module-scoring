@@ -559,6 +559,77 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
     flex-shrink: 0;
 }
 
+.chat-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0;
+}
+
+.chat-attachments:empty {
+    display: none;
+}
+
+.chat-attachments:not(:empty) {
+    margin-bottom: 8px;
+}
+
+.attach-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    max-width: 180px;
+}
+
+.attach-badge-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attach-badge button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.attach-badge button:hover {
+    color: var(--text-primary);
+}
+
+.chat-attach-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--transition);
+    font-size: 18px;
+    font-weight: 300;
+}
+
+.chat-attach-btn:hover {
+    border-color: var(--border-focus);
+    color: var(--text-primary);
+    background: var(--bg);
+}
+
 .chat-input-wrapper {
     display: flex;
     align-items: flex-end;

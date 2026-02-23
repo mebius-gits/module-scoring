@@ -6,6 +6,7 @@
     <title>醫療評分系統</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -40,7 +41,12 @@
                     </div>
                 </div>
                 <div class="chat-input-area">
+                    <div class="chat-attachments" id="chatAttachments"></div>
                     <div class="chat-input-wrapper">
+                        <input type="file" id="chatFileInput" multiple accept=".txt,.csv,.json,.yaml,.yml,.md,.py,.js,.html,.css,.xml,.log,.sql,.ini,.cfg,.conf,.toml,.docx" style="display:none" onchange="handleFileAttach(event)">
+                        <button class="chat-attach-btn" onclick="document.getElementById('chatFileInput').click()" title="附加檔案">
+                            <span>+</span>
+                        </button>
                         <textarea id="chatInput" rows="1" placeholder="輸入訊息，按 Enter 發送（Shift+Enter 換行）..."
                             onkeydown="handleChatKeydown(event)"
                             oninput="autoResizeChatInput(this)"></textarea>

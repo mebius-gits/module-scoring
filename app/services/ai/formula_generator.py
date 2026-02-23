@@ -215,6 +215,7 @@ Your conversational reply must be in 繁體中文 (Traditional Chinese)."""
         self,
         message: str,
         patient_fields: Optional[List[dict]] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> Tuple[str, Optional[str]]:
         """
         混合模式聊天：AI 自動判斷是一般對話或公式生成請求。
@@ -223,6 +224,7 @@ Your conversational reply must be in 繁體中文 (Traditional Chinese)."""
         Args:
             message: 使用者訊息
             patient_fields: 病人欄位清單 [{"field_name": "age", "label": "年齡 (歲)", "field_type": "int"}, ...]
+            attachments: 使用者附加的檔案 [{"filename": "...", "content": "..."}]
         Returns:
             Tuple[str, Optional[str]]: (對話回覆, YAML 公式字串 or None)
         """
@@ -239,10 +241,23 @@ Your conversational reply must be in 繁體中文 (Traditional Chinese)."""
         else:
             patient_fields_hint = ""
 
+        # 組裝 file attachments hint
+        attachments_hint = ""
+        if attachments:
+            file_parts = []
+            for att in attachments:
+                file_parts.append(
+                    f"--- FILE: {att['filename']} ---\n{att['content']}\n--- END FILE ---"
+                )
+            attachments_hint = (
+                "\n\nATTACHED FILES (user uploaded for reference):\n"
+                + "\n".join(file_parts)
+            )
+
         prompt = self._CHAT_PROMPT_TEMPLATE.format(
             user_message=message,
             patient_fields_hint=patient_fields_hint,
-        )
+        ) + attachments_hint
         full_text = self.gemini_client.generate_content(prompt).strip()
 
         # 解析：分離對話回覆與公式區塊

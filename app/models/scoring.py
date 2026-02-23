@@ -109,12 +109,21 @@ class FormulaStorageItem(BaseModel):
 
 
 
+class FileAttachment(BaseModel):
+    """檔案附件：包含檔名與內容"""
+    filename: str = Field(..., description="檔案名稱")
+    content: str = Field(..., description="檔案文字內容")
+
+
 class ChatRequest(BaseModel):
     """混合模式聊天請求：一般對話 + 公式生成"""
     message: str = Field(
         ...,
         min_length=1,
         description="使用者訊息，AI 自動判斷是一般對話或公式生成請求",
+    )
+    attachments: Optional[List[FileAttachment]] = Field(
+        None, description="附加的檔案列表（檔名 + 文字內容）",
     )
 
 

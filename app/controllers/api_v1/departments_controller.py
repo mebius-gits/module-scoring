@@ -16,7 +16,7 @@ from app.models.departments import (
 from app.repositories.department_repo import DepartmentRepo
 from app.services.department_service import DepartmentService
 
-router = APIRouter(prefix="/api/v1/departments", tags=["API v1 - Departments"])
+router = APIRouter(prefix="/v1/departments", tags=["Departments"])
 
 
 def get_department_service(db: Session = Depends(get_db)) -> DepartmentService:

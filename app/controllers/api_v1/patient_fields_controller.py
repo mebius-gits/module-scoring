@@ -16,7 +16,7 @@ from app.models.patient_fields import (
 from app.repositories.patient_field_repo import PatientFieldRepo
 from app.services.patient_field_service import PatientFieldService
 
-router = APIRouter(prefix="/api/v1/patient-fields", tags=["API v1 - PatientFields"])
+router = APIRouter(prefix="/v1/patient-fields", tags=["Patient Fields"])
 
 
 def get_patient_field_service(db: Session = Depends(get_db)) -> PatientFieldService:

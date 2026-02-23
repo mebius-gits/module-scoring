@@ -15,8 +15,8 @@ from app.repositories.scoring_repo import ScoringRepo
 from app.services.ai.scoring_service import ScoringService
 
 router = APIRouter(
-    prefix="/ai/v1",
-    tags=["AI v1 - Chat"],
+    prefix="/v1/ai",
+    tags=["AI Chat"],
 )
 
 
@@ -63,6 +63,10 @@ def chat(
     return svc.chat(
         message=req.message,
         patient_fields=patient_fields if patient_fields else None,
+        attachments=[
+            {"filename": a.filename, "content": a.content}
+            for a in req.attachments
+        ] if req.attachments else None,
     )
 
 
