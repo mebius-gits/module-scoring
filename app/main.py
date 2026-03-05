@@ -198,9 +198,10 @@ if _settings.ENABLE_SWAGGER_UI:
 
 
 # ── 掛載前端靜態檔案 ─────────────────────────────────────────
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-if _FRONTEND_DIR.is_dir():
-    app.mount("/frontend", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
+if _settings.ENABLE_FRONTEND:
+    _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+    if _FRONTEND_DIR.is_dir():
+        app.mount("/frontend", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
 
 
 # ── Startup Event：建表 + Seed 預設病人欄位 ─────────────────────

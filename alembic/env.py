@@ -16,6 +16,9 @@ from app.infra.settings import settings
 from app.infra.db import Base
 # 匯入所有 ORM Model 讓 autogenerate 可偵測
 from app.repositories.item_repo import ItemModel  # noqa: F401
+from app.repositories.department_repo import DepartmentModel  # noqa: F401
+from app.repositories.formula_repo import FormulaModel  # noqa: F401
+from app.repositories.patient_field_repo import PatientFieldModel  # noqa: F401
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 target_metadata = Base.metadata
