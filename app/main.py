@@ -4,12 +4,10 @@ FastAPI 應用程式進入點。
 使用 Swagger UI 下拉選單切換 API 版本。
 """
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from app.common.exceptions import (
     NotFoundException,
@@ -198,13 +196,6 @@ if _settings.ENABLE_SWAGGER_UI:
     @app.get("/openapi-v2.json", include_in_schema=False)
     async def _openapi_v2_ui(request: Request):
         return _build_filtered_openapi("v2", request.scope.get("root_path", ""))
-
-
-# ── 掛載前端靜態檔案 ─────────────────────────────────────────
-if _settings.ENABLE_FRONTEND:
-    _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-    if _FRONTEND_DIR.is_dir():
-        app.mount("/frontend", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
 
 
 # ── Startup Event：建表 + Seed 預設病人欄位 ─────────────────────

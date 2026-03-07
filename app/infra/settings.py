@@ -27,10 +27,6 @@ class Settings(BaseSettings):
     # 設為 false 可關閉 /docs Swagger UI（正式環境建議關閉）
     ENABLE_SWAGGER_UI: bool = True
 
-    # ── 前端頁面 ─────────────────────────────────────────
-    # 設為 false 可關閉 /frontend 靜態檔案掛載
-    ENABLE_FRONTEND: bool = True
-
     # ── 速率限制 (Rate Limit Stub) ───────────────────────
     AI_RATE_LIMIT_PER_KEY: int = 100
 
