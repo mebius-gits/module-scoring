@@ -2,6 +2,11 @@
 Alembic migration env.py
 自動讀取 app/infra/settings.py 的 DATABASE_URL，無需在 alembic.ini 硬寫連線字串。
 """
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
