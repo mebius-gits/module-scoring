@@ -56,9 +56,10 @@ def create_formula(
 )
 def list_formulas(
     department_id: Optional[int] = Query(None, description="依科別篩選"),
+    include_inactive: bool = Query(False, description="是否包含已停用的公式"),
     svc: FormulaService = Depends(get_formula_service),
 ):
-    return svc.list_formulas(department_id=department_id)
+    return svc.list_formulas(department_id=department_id, include_inactive=include_inactive)
 
 
 # ── 取得單一公式
@@ -99,6 +100,19 @@ def delete_formula(
     svc: FormulaService = Depends(get_formula_service),
 ):
     svc.delete_formula(formula_id)
+
+# ── 啟用/停用公式
+@router.patch(
+    "/formulas/{formula_id}/toggle",
+    response_model=FormulaResponse,
+    summary="啟用/停用公式",
+)
+def toggle_formula(
+    formula_id: int,
+    is_active: bool = Query(..., description="設為 true 啟用，false 停用"),
+    svc: FormulaService = Depends(get_formula_service),
+):
+    return svc.toggle_formula(formula_id, is_active)
 
 # ── 計算分數 (前移自 scoring_controller)
 @router.post(

@@ -31,6 +31,7 @@ class FormulaResponse(BaseModel):
     description: Optional[str] = None
     ast_data: Dict[str, Any]
     yaml_content: str
+    is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

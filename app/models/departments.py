@@ -24,6 +24,7 @@ class DepartmentResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -44,6 +45,7 @@ class DepartmentDetailResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     formulas: List[FormulaInDepartment] = []

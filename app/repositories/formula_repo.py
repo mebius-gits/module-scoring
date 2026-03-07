@@ -4,7 +4,7 @@ Formula Repository：封裝 Formulas 的 SQLAlchemy ORM Model 與資料存取操
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import Session, relationship
 
 from app.infra.db import Base
@@ -23,6 +23,7 @@ class FormulaModel(Base):
     description = Column(String(500), nullable=True)
     ast_data = Column(JSON, nullable=False)
     yaml_content = Column(Text, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -53,10 +54,12 @@ class FormulaRepo:
         self.db.refresh(formula)
         return formula
 
-    def list_all(self, department_id: Optional[int] = None) -> List[FormulaModel]:
+    def list_all(self, department_id: Optional[int] = None, include_inactive: bool = False) -> List[FormulaModel]:
         query = self.db.query(FormulaModel)
         if department_id is not None:
             query = query.filter(FormulaModel.department_id == department_id)
+        if not include_inactive:
+            query = query.filter(FormulaModel.is_active == True)
         return query.order_by(FormulaModel.id).all()
 
     def get_by_id(self, formula_id: int) -> Optional[FormulaModel]:
@@ -70,6 +73,15 @@ class FormulaRepo:
             return None
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(formula, field, value)
+        self.db.commit()
+        self.db.refresh(formula)
+        return formula
+
+    def set_active(self, formula_id: int, is_active: bool) -> Optional[FormulaModel]:
+        formula = self.get_by_id(formula_id)
+        if formula is None:
+            return None
+        formula.is_active = is_active
         self.db.commit()
         self.db.refresh(formula)
         return formula

@@ -23,8 +23,8 @@ class DepartmentService:
         db_dept = self.repo.create(data)
         return DepartmentResponse.model_validate(db_dept)
 
-    def list_departments(self) -> List[DepartmentResponse]:
-        db_depts = self.repo.list_all()
+    def list_departments(self, include_inactive: bool = False) -> List[DepartmentResponse]:
+        db_depts = self.repo.list_all(include_inactive=include_inactive)
         return [DepartmentResponse.model_validate(d) for d in db_depts]
 
     def get_department(self, department_id: int) -> DepartmentDetailResponse:
@@ -35,6 +35,12 @@ class DepartmentService:
 
     def update_department(self, department_id: int, data: DepartmentUpdate) -> DepartmentResponse:
         db_dept = self.repo.update(department_id, data)
+        if db_dept is None:
+            raise NotFoundException(f"Department {department_id} 不存在")
+        return DepartmentResponse.model_validate(db_dept)
+
+    def toggle_department(self, department_id: int, is_active: bool) -> DepartmentResponse:
+        db_dept = self.repo.set_active(department_id, is_active)
         if db_dept is None:
             raise NotFoundException(f"Department {department_id} 不存在")
         return DepartmentResponse.model_validate(db_dept)

@@ -4,7 +4,7 @@ Department Repository：封裝 Departments 的 SQLAlchemy ORM Model 與資料存
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import Session, relationship
 
 from app.infra.db import Base
@@ -18,6 +18,7 @@ class DepartmentModel(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(255), unique=True, nullable=False, index=True)
     description = Column(String(500), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -44,8 +45,11 @@ class DepartmentRepo:
         self.db.refresh(dept)
         return dept
 
-    def list_all(self) -> List[DepartmentModel]:
-        return self.db.query(DepartmentModel).order_by(DepartmentModel.id).all()
+    def list_all(self, include_inactive: bool = False) -> List[DepartmentModel]:
+        query = self.db.query(DepartmentModel)
+        if not include_inactive:
+            query = query.filter(DepartmentModel.is_active == True)
+        return query.order_by(DepartmentModel.id).all()
 
     def get_by_id(self, department_id: int) -> Optional[DepartmentModel]:
         return self.db.query(DepartmentModel).filter(
@@ -58,6 +62,15 @@ class DepartmentRepo:
             return None
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(dept, field, value)
+        self.db.commit()
+        self.db.refresh(dept)
+        return dept
+
+    def set_active(self, department_id: int, is_active: bool) -> Optional[DepartmentModel]:
+        dept = self.get_by_id(department_id)
+        if dept is None:
+            return None
+        dept.is_active = is_active
         self.db.commit()
         self.db.refresh(dept)
         return dept

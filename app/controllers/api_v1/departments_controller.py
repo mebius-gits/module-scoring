@@ -3,7 +3,7 @@
 """
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.infra.db import get_db
@@ -33,9 +33,10 @@ def create_department(
 
 @router.get("", response_model=List[DepartmentResponse], summary="列出所有科別")
 def list_departments(
+    include_inactive: bool = Query(False, description="是否包含已停用的科別"),
     svc: DepartmentService = Depends(get_department_service),
 ):
-    return svc.list_departments()
+    return svc.list_departments(include_inactive=include_inactive)
 
 
 @router.get("/{department_id}", response_model=DepartmentDetailResponse, summary="取得單一科別（含公式列表）")
@@ -53,6 +54,15 @@ def update_department(
     svc: DepartmentService = Depends(get_department_service),
 ):
     return svc.update_department(department_id, data)
+
+
+@router.patch("/{department_id}/toggle", response_model=DepartmentResponse, summary="啟用/停用科別")
+def toggle_department(
+    department_id: int,
+    is_active: bool = Query(..., description="設為 true 啟用，false 停用"),
+    svc: DepartmentService = Depends(get_department_service),
+):
+    return svc.toggle_department(department_id, is_active)
 
 
 @router.delete("/{department_id}", status_code=204, summary="刪除科別")

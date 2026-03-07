@@ -24,8 +24,8 @@ class FormulaService:
         db_formula = self.repo.create(department_id, data)
         return FormulaResponse.model_validate(db_formula)
 
-    def list_formulas(self, department_id: Optional[int] = None) -> List[FormulaResponse]:
-        db_formulas = self.repo.list_all(department_id=department_id)
+    def list_formulas(self, department_id: Optional[int] = None, include_inactive: bool = False) -> List[FormulaResponse]:
+        db_formulas = self.repo.list_all(department_id=department_id, include_inactive=include_inactive)
         return [FormulaResponse.model_validate(f) for f in db_formulas]
 
     def get_formula(self, formula_id: int) -> FormulaResponse:
@@ -36,6 +36,12 @@ class FormulaService:
 
     def update_formula(self, formula_id: int, data: FormulaUpdate) -> FormulaResponse:
         db_formula = self.repo.update(formula_id, data)
+        if db_formula is None:
+            raise NotFoundException(f"Formula {formula_id} 不存在")
+        return FormulaResponse.model_validate(db_formula)
+
+    def toggle_formula(self, formula_id: int, is_active: bool) -> FormulaResponse:
+        db_formula = self.repo.set_active(formula_id, is_active)
         if db_formula is None:
             raise NotFoundException(f"Formula {formula_id} 不存在")
         return FormulaResponse.model_validate(db_formula)
