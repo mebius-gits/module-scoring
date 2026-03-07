@@ -106,7 +106,7 @@ _VERSION_SPECS = {
 }
 
 
-def _build_filtered_openapi(spec_key: str) -> dict:
+def _build_filtered_openapi(spec_key: str, root_path: str = "") -> dict:
     """根據路徑前綴過濾完整 OpenAPI schema，產出版本專屬 spec。"""
     full = app.openapi()
     cfg = _VERSION_SPECS[spec_key]
@@ -143,7 +143,7 @@ def _build_filtered_openapi(spec_key: str) -> dict:
         k: v for k, v in all_schemas.items() if k in used_schemas
     }
 
-    return {
+    result = {
         "openapi": full.get("openapi", "3.1.0"),
         "info": {
             "title": cfg["title"],
@@ -153,6 +153,9 @@ def _build_filtered_openapi(spec_key: str) -> dict:
         "paths": filtered_paths,
         "components": {"schemas": filtered_schemas} if filtered_schemas else {},
     }
+    if root_path:
+        result["servers"] = [{"url": root_path}]
+    return result
 
 
 # ── 自訂 Swagger UI：版本下拉選單 ────────────────────────────
@@ -189,12 +192,12 @@ if _settings.ENABLE_SWAGGER_UI:
         return HTMLResponse(_build_swagger_html(request.scope.get("root_path", "")))
 
     @app.get("/openapi-v1.json", include_in_schema=False)
-    async def _openapi_v1_ui():
-        return _build_filtered_openapi("v1")
+    async def _openapi_v1_ui(request: Request):
+        return _build_filtered_openapi("v1", request.scope.get("root_path", ""))
 
     @app.get("/openapi-v2.json", include_in_schema=False)
-    async def _openapi_v2_ui():
-        return _build_filtered_openapi("v2")
+    async def _openapi_v2_ui(request: Request):
+        return _build_filtered_openapi("v2", request.scope.get("root_path", ""))
 
 
 # ── 掛載前端靜態檔案 ─────────────────────────────────────────
