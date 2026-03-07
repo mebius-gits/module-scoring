@@ -2,7 +2,10 @@
    醫療評分系統 - Frontend Application
    ================================================================ */
 
-const API_BASE = window.location.origin;
+// 自動偵測 ROOT_PATH：前端掛載在 /frontend 下，取其上層路徑
+// 例如 https://domain/api/frontend/ → ROOT_PATH = "/api"
+const _frontendPath = window.location.pathname.replace(/\/frontend\/?.*$/, "");
+const API_BASE = window.location.origin + _frontendPath;
 
 // ── State ──────────────────────────────────────────────────────
 let departments = [];
@@ -500,7 +503,7 @@ async function sendChat() {
 
   // Collect attachments
   const attachments = chatAttachments.length ? [...chatAttachments] : null;
-  const attachNames = attachments ? attachments.map(a => a.filename) : [];
+  const attachNames = attachments ? attachments.map((a) => a.filename) : [];
 
   // Clear input & attachments
   input.value = "";
@@ -627,7 +630,9 @@ function handleFileAttach(event) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+          const result = await mammoth.extractRawText({
+            arrayBuffer: e.target.result,
+          });
           chatAttachments.push({
             filename: file.name,
             content: result.value,
@@ -682,7 +687,7 @@ function renderChatAttachments() {
       <span class="attach-badge">
         <span class="attach-badge-name" title="${escHtml(a.filename)}">${escHtml(a.filename)}</span>
         <button onclick="removeChatAttachment(${i})" title="移除">x</button>
-      </span>`
+      </span>`,
     )
     .join("");
 }

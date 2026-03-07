@@ -156,8 +156,9 @@ def _build_filtered_openapi(spec_key: str) -> dict:
 
 
 # ── 自訂 Swagger UI：版本下拉選單 ────────────────────────────
-_SWAGGER_UI_HTML = """
-<!DOCTYPE html>
+def _build_swagger_html(root_path: str = "") -> str:
+    """動態產生 Swagger UI HTML，將 root_path 注入 OpenAPI URL。"""
+    return f"""<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -168,25 +169,24 @@ _SWAGGER_UI_HTML = """
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
 <script>
-SwaggerUIBundle({
+SwaggerUIBundle({{
     urls: [
-        {url: "/openapi-v1.json", name: "V1 - Scoring System"},
-        {url: "/openapi-v2.json", name: "V2 - Items"}
+        {{url: "{root_path}/openapi-v1.json", name: "V1 - Scoring System"}},
+        {{url: "{root_path}/openapi-v2.json", name: "V2 - Items"}}
     ],
     "urls.primaryName": "V1 - Scoring System",
     dom_id: "#swagger-ui",
     presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
     layout: "StandaloneLayout"
-});
+}});
 </script>
-</body></html>
-"""
+</body></html>"""
 
 
 if _settings.ENABLE_SWAGGER_UI:
     @app.get("/docs", include_in_schema=False)
-    async def custom_swagger_ui():
-        return HTMLResponse(_SWAGGER_UI_HTML)
+    async def custom_swagger_ui(request: Request):
+        return HTMLResponse(_build_swagger_html(request.scope.get("root_path", "")))
 
     @app.get("/openapi-v1.json", include_in_schema=False)
     async def _openapi_v1_ui():
