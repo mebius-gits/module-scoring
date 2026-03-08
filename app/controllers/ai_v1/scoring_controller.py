@@ -11,8 +11,8 @@ from app.models.scoring import (
     ChatRequest,
     ChatResponse,
 )
+from app.repositories.formula_repo import FormulaRepo
 from app.repositories.patient_field_repo import PatientFieldRepo
-from app.repositories.scoring_repo import ScoringRepo
 from app.repositories.user_repo import UserModel
 from app.services.ai.scoring_service import ScoringService
 
@@ -22,10 +22,10 @@ router = APIRouter(
 )
 
 
-def get_scoring_service() -> ScoringService:
+def get_scoring_service(db: Session = Depends(get_db)) -> ScoringService:
     """建立 ScoringService 並注入所有依賴"""
     return ScoringService(
-        scoring_repo=ScoringRepo(),
+        formula_repo=FormulaRepo(db),
         gemini_client=GeminiClient(),
     )
 

@@ -12,6 +12,7 @@ from app.models.scoring import (
     RiskLevelDefinition,
     RuleDefinition,
     ScoringYamlSchema,
+    VariableDefinition,
 )
 
 
@@ -92,10 +93,25 @@ class YamlParser:
                     add=r_raw.get("add", 0),
                 ))
 
-            # variables: 支援 dict 格式 {name: type} 或 list 格式
-            variables = mod_raw.get("variables", {})
-            if isinstance(variables, list):
-                variables = {str(v): "any" for v in variables}
+            # variables: 支援多種格式
+            # 1. Dict[str, str]: {name: type}  (向後相容)
+            # 2. Dict[str, dict]: {name: {type: ..., description: ...}}
+            # 3. List: [name, ...]
+            raw_variables = mod_raw.get("variables", {})
+            variables = {}
+            if isinstance(raw_variables, list):
+                variables = {str(v): VariableDefinition(type="any") for v in raw_variables}
+            elif isinstance(raw_variables, dict):
+                for var_name, var_val in raw_variables.items():
+                    if isinstance(var_val, str):
+                        variables[var_name] = VariableDefinition(type=var_val)
+                    elif isinstance(var_val, dict):
+                        variables[var_name] = VariableDefinition(
+                            type=var_val.get("type", "any"),
+                            description=var_val.get("description", ""),
+                        )
+                    else:
+                        variables[str(var_name)] = VariableDefinition(type="any")
 
             modules.append(ModuleDefinition(
                 name=mod_raw.get("name") or mod_raw.get("module_name", "Unnamed"),

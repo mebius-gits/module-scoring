@@ -22,7 +22,8 @@ from app.models.scoring import (
     ExtractVariablesRequest,
     ExtractVariablesResponse,
 )
-from app.controllers.ai_v1.scoring_controller import get_scoring_service
+from app.infra.clients.gemini_client import GeminiClient
+from app.repositories.formula_repo import FormulaRepo as FormulaRepoForScoring
 from app.services.ai.scoring_service import ScoringService
 
 router = APIRouter(prefix="/v1")
@@ -30,6 +31,13 @@ router = APIRouter(prefix="/v1")
 
 def get_formula_service(db: Session = Depends(get_db)) -> FormulaService:
     return FormulaService(FormulaRepo(db), DepartmentRepo(db))
+
+
+def get_scoring_service(db: Session = Depends(get_db)) -> ScoringService:
+    return ScoringService(
+        formula_repo=FormulaRepoForScoring(db),
+        gemini_client=GeminiClient(),
+    )
 
 
 # ── 建立公式（admin / builder）

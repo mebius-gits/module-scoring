@@ -4,7 +4,7 @@ Scoring YAML Schema - Pydantic Models。
 同時包含 API 請求/回應 Schema。
 """
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ── YAML Schema 定義 ─────────────────────────────────────────────
@@ -35,12 +35,34 @@ class RuleDefinition(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class VariableDefinition(BaseModel):
+    """變數定義：型態 + 描述"""
+    type: str = Field(..., description="變數型態: int, float, boolean")
+    description: str = Field("", description="變數用途說明")
+
+
 class ModuleDefinition(BaseModel):
     """模組定義：包含 variables, formulas, rules"""
     name: str = Field(..., description="模組名稱")
-    variables: Dict[str, str] = Field(default_factory=dict, description="變數名與資料型態的映射")
+    variables: Dict[str, VariableDefinition] = Field(default_factory=dict, description="變數名與定義的映射")
     formulas: List[FormulaDefinition] = Field(default_factory=list, description="公式列表")
     rules: List[RuleDefinition] = Field(default_factory=list, description="評分規則列表")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_variables(cls, values: Any) -> Any:
+        """Allow variables as {name: type_str} for backward compatibility."""
+        if isinstance(values, dict) and "variables" in values:
+            raw = values["variables"]
+            if isinstance(raw, dict):
+                coerced = {}
+                for k, v in raw.items():
+                    if isinstance(v, str):
+                        coerced[k] = {"type": v}
+                    else:
+                        coerced[k] = v
+                values["variables"] = coerced
+        return values
 
 
 class RiskLevelDefinition(BaseModel):
@@ -74,7 +96,7 @@ class GenerateFormulaRequest(BaseModel):
 class CalculateScoreRequest(BaseModel):
     """分數計算請求"""
     yaml_content: Optional[str] = Field(None, description="YAML 公式字串（與 formula_id 二選一）")
-    formula_id: Optional[str] = Field(None, description="已儲存的公式 ID（與 yaml_content 二選一）")
+    formula_id: Optional[int] = Field(None, description="已儲存的公式 ID（與 yaml_content 二選一）")
     variables: Dict[str, Any] = Field(
         ...,
         description="所有模組的輸入變數，格式: {'age': 75, 'is_female': true, ...}",
@@ -95,15 +117,6 @@ class ScoreResponse(BaseModel):
     module_scores: Dict[str, ModuleScoreResult] = Field(default_factory=dict)
     global_score: float = Field(0, description="全局總分")
     risk_level: str = Field("", description="風險等級文字")
-
-
-class FormulaStorageItem(BaseModel):
-    """已儲存的公式資訊"""
-    formula_id: str
-    score_name: str
-    yaml_content: str
-    ast_data: Optional[Dict[str, Any]] = None
-    module_count: int = 0
 
 
 
@@ -138,13 +151,14 @@ class ChatResponse(BaseModel):
 class ExtractVariablesRequest(BaseModel):
     """變數萃取請求：從 YAML 或 formula_id 解析出所有變數"""
     yaml_content: Optional[str] = Field(None, description="YAML 公式字串")
-    formula_id: Optional[str] = Field(None, description="已儲存的公式 ID")
+    formula_id: Optional[int] = Field(None, description="已儲存的公式 ID")
 
 
 class VariableInfo(BaseModel):
     """單一變數的資訊"""
     name: str = Field(..., description="變數名稱")
     var_type: str = Field(..., description="變數型態: int, float, boolean")
+    description: str = Field("", description="變數用途說明")
     module: str = Field(..., description="所屬模組名稱")
 
 

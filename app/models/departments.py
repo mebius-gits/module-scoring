@@ -34,6 +34,7 @@ class DepartmentResponse(BaseModel):
 class FormulaInDepartment(BaseModel):
     """列出科別時顯示的輕量 formula 資訊"""
     id: int
+    abbreviation: Optional[str] = None
     name: str
     created_at: Optional[datetime] = None
 

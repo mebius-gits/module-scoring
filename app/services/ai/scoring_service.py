@@ -1,6 +1,6 @@
 """
 Scoring Service：Orchestrator 服務層。
-組合 FormulaGenerator、YamlParser、ScoreCalculator、RiskAssessor、ScoringRepo，
+組合 FormulaGenerator、YamlParser、ScoreCalculator、RiskAssessor、FormulaRepo，
 完成從生成到計算到風險評估的完整流程。
 支援完整 Pipeline：病人資料 -> AI 分模組 -> 計算 -> 風險評估 -> JSON。
 """
@@ -15,7 +15,7 @@ from app.models.scoring import (
     ScoreResponse,
     VariableInfo,
 )
-from app.repositories.scoring_repo import ScoringRepo
+from app.repositories.formula_repo import FormulaRepo
 from app.services.ai.formula_generator import FormulaGenerator
 from app.services.ai.risk_assessor import RiskAssessor
 from app.services.ai.score_calculator import ScoreCalculator
@@ -31,10 +31,10 @@ class ScoringService:
 
     def __init__(
         self,
-        scoring_repo: ScoringRepo,
+        formula_repo: FormulaRepo,
         gemini_client: GeminiClient,
     ):
-        self.scoring_repo = scoring_repo
+        self.formula_repo = formula_repo
         self.formula_generator = FormulaGenerator(gemini_client)
         self.yaml_parser = YamlParser()
         self.score_calculator = ScoreCalculator()
@@ -90,7 +90,10 @@ class ScoringService:
         """
         # Step 1: 取得 YAML
         if request.formula_id:
-            stored = self.scoring_repo.get_formula(request.formula_id)
+            from app.common.exceptions import NotFoundException
+            stored = self.formula_repo.get_by_id(request.formula_id)
+            if stored is None:
+                raise NotFoundException(f"Formula {request.formula_id} 不存在")
             yaml_content = stored.yaml_content
         elif request.yaml_content:
             yaml_content = request.yaml_content
@@ -134,7 +137,10 @@ class ScoringService:
         """
         # 取得 YAML
         if request.formula_id:
-            stored = self.scoring_repo.get_formula(request.formula_id)
+            from app.common.exceptions import NotFoundException
+            stored = self.formula_repo.get_by_id(request.formula_id)
+            if stored is None:
+                raise NotFoundException(f"Formula {request.formula_id} 不存在")
             yaml_content = stored.yaml_content
         elif request.yaml_content:
             yaml_content = request.yaml_content
@@ -149,12 +155,13 @@ class ScoringService:
         seen = set()
         variables = []
         for module in schema.modules:
-            for var_name, var_type in module.variables.items():
+            for var_name, var_def in module.variables.items():
                 if var_name not in seen:
                     seen.add(var_name)
                     variables.append(VariableInfo(
                         name=var_name,
-                        var_type=var_type,
+                        var_type=var_def.type,
+                        description=var_def.description,
                         module=module.name,
                     ))
 
@@ -171,7 +178,10 @@ class ScoringService:
         將獨立的 YAML 或已儲存的公式，轉換為 Blockly 相容的 JSON AST 結構。
         """
         if request.formula_id:
-            stored = self.scoring_repo.get_formula(request.formula_id)
+            from app.common.exceptions import NotFoundException
+            stored = self.formula_repo.get_by_id(request.formula_id)
+            if stored is None:
+                raise NotFoundException(f"Formula {request.formula_id} 不存在")
             yaml_content = stored.yaml_content
         elif request.yaml_content:
             yaml_content = request.yaml_content

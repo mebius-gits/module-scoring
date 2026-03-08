@@ -27,7 +27,7 @@ CRITICAL RULES FOR MODULE SPLITTING:
 MODULE CONTENT STRUCTURE:
 Each module must contain:
   - name: module name (PascalCase)
-  - variables: variable name to type mapping (int, float, boolean)
+  - variables: variable name to definition mapping, each variable has type (int, float, boolean) and description (brief purpose in Traditional Chinese)
   - formulas: list of formula definitions
   - rules: MANDATORY scoring adjustments based on formula results
 
@@ -87,7 +87,9 @@ score_name: <ScoreName_In_Snake_Case>
 modules:
   - name: <ModuleName>
     variables:
-      <variable_name>: <type>
+      <variable_name>:
+        type: <type>
+        description: <brief description in Traditional Chinese>
     formulas:
       - name: <formula_name>
         formula: <math_expression>
@@ -160,7 +162,9 @@ score_name: <ScoreName>
 modules:
   - name: <ModuleName>
     variables:
-      <variable_name>: <type>
+      <variable_name>:
+        type: <type>
+        description: <brief description in Traditional Chinese>
     formulas:
       - name: <formula_name>
         formula: <math_expression>

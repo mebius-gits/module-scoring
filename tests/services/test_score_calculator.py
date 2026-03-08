@@ -11,13 +11,11 @@ from app.services.ai.yaml_parser import YamlParser
 from app.services.ai.score_calculator import ScoreCalculator
 from app.services.ai.risk_assessor import RiskAssessor
 from app.services.ai.scoring_service import ScoringService
-from app.repositories.scoring_repo import ScoringRepo
 from app.models.scoring import (
     CalculateScoreRequest,
     ConditionBlock,
     FormulaDefinition,
     ModuleDefinition,
-    PipelineRequest,
     RiskLevelDefinition,
     RuleDefinition,
     ScoringYamlSchema,
@@ -475,9 +473,8 @@ class TestEndToEnd:
 
     def test_scoring_service_calculate(self):
         mock_gemini = MagicMock()
-        repo = ScoringRepo()
-        repo.clear_all()
-        svc = ScoringService(scoring_repo=repo, gemini_client=mock_gemini)
+        mock_formula_repo = MagicMock()
+        svc = ScoringService(formula_repo=mock_formula_repo, gemini_client=mock_gemini)
         request = CalculateScoreRequest(
             yaml_content=EXAMPLE_YAML,
             variables={
@@ -490,29 +487,6 @@ class TestEndToEnd:
         assert response.score_name == "Cockcroft_Gault_Creatinine_Clearance"
         assert response.global_score == 3.5
         assert "Low Risk" in response.risk_level
-
-    def test_scoring_service_generate_and_store(self):
-        mock_gemini = MagicMock()
-        mock_gemini.generate_content.return_value = EXAMPLE_YAML
-        repo = ScoringRepo()
-        repo.clear_all()
-        svc = ScoringService(scoring_repo=repo, gemini_client=mock_gemini)
-        item = svc.generate_formula("Cockcroft-Gault Creatinine Clearance")
-        assert item.formula_id is not None
-        assert item.score_name == "Cockcroft_Gault_Creatinine_Clearance"
-        assert item.module_count == 3
-
-        # 用 formula_id 計算
-        request = CalculateScoreRequest(
-            formula_id=item.formula_id,
-            variables={
-                "age": 65, "is_female": False,
-                "troponin_level": 1, "ecg_score": 0,
-                "history_score": 0, "risk_factor_count": 0,
-            },
-        )
-        response = svc.calculate_score(request)
-        assert response.score_name == "Cockcroft_Gault_Creatinine_Clearance"
 
 
 # ── 7. 複雜數學公式測試 ──────────────────────────────────────────
@@ -603,56 +577,65 @@ class TestModuleNameAlias:
 
 
 class TestPipeline:
-    """測試完整 Pipeline: 病人資料 -> AI 分模組 -> 計算 -> 風險"""
+    """Pipeline 測試：確認 ScoringService 透過 formula_id 從 DB 讀取 YAML 並計算"""
 
-    def test_run_pipeline(self):
-        """Pipeline: mock Gemini -> 計算 -> 回傳完整結果"""
+    def test_calculate_with_formula_id_from_db(self):
+        """透過 formula_id 從 mock FormulaRepo 取 YAML -> 計算 -> 回傳結果"""
         mock_gemini = MagicMock()
-        mock_gemini.generate_content.return_value = COMPLEX_FORMULA_YAML
-        repo = ScoringRepo()
-        repo.clear_all()
-        svc = ScoringService(scoring_repo=repo, gemini_client=mock_gemini)
 
-        request = PipelineRequest(
-            score_name="Cockcroft_Gault",
-            variables_description=["age: int", "weight: int", "serum_creatinine: float", "is_female: boolean"],
-            formulas_description=["clearance = ((140-age)*weight)/(72*cr)"],
+        # Mock FormulaRepo.get_by_id 回傳一個類 ORM 物件
+        mock_formula_repo = MagicMock()
+        mock_stored = MagicMock()
+        mock_stored.yaml_content = COMPLEX_FORMULA_YAML
+        mock_formula_repo.get_by_id.return_value = mock_stored
+
+        svc = ScoringService(formula_repo=mock_formula_repo, gemini_client=mock_gemini)
+
+        response = svc.calculate_score(CalculateScoreRequest(
+            formula_id=1,
             variables={"age": 75, "weight": 60, "serum_creatinine": 1.2, "is_female": False},
-        )
-        response = svc.run_pipeline(request)
+        ))
 
-        assert response.formula_id is not None
-        assert response.generated_yaml is not None
         assert response.score_name == "Cockcroft_Gault_Real"
         assert "RenalFunction" in response.module_scores
         assert isinstance(response.global_score, float)
         assert response.risk_level != ""
+        mock_formula_repo.get_by_id.assert_called_once_with(1)
 
-        # formula_id 已儲存
-        stored = repo.get_formula(response.formula_id)
-        assert stored.score_name == "Cockcroft_Gault_Real"
+    def test_calculate_formula_id_not_found(self):
+        """當 formula_id 不存在時應拋出 NotFoundException"""
+        from app.common.exceptions import NotFoundException
+        mock_gemini = MagicMock()
+        mock_formula_repo = MagicMock()
+        mock_formula_repo.get_by_id.return_value = None
 
-    def test_pipeline_formula_reuse(self):
+        svc = ScoringService(formula_repo=mock_formula_repo, gemini_client=mock_gemini)
+
+        with pytest.raises(NotFoundException):
+            svc.calculate_score(CalculateScoreRequest(
+                formula_id=999,
+                variables={"age": 75},
+            ))
+
+    def test_calculate_reuse_formula_with_different_variables(self):
         """Pipeline 生成的 formula_id 可用於後續 calculate"""
         mock_gemini = MagicMock()
-        mock_gemini.generate_content.return_value = COMPLEX_FORMULA_YAML
-        repo = ScoringRepo()
-        repo.clear_all()
-        svc = ScoringService(scoring_repo=repo, gemini_client=mock_gemini)
+        mock_formula_repo = MagicMock()
+        mock_stored = MagicMock()
+        mock_stored.yaml_content = COMPLEX_FORMULA_YAML
+        mock_formula_repo.get_by_id.return_value = mock_stored
 
-        # Step 1: Pipeline
-        pipeline_resp = svc.run_pipeline(PipelineRequest(
-            score_name="Test",
-            variables_description=["age: int"],
-            formulas_description=["test = age * 2"],
+        svc = ScoringService(formula_repo=mock_formula_repo, gemini_client=mock_gemini)
+
+        # 計算兩次，不同變數
+        resp1 = svc.calculate_score(CalculateScoreRequest(
+            formula_id=1,
             variables={"age": 75, "weight": 60, "serum_creatinine": 1.2, "is_female": False},
         ))
-
-        # Step 2: Reuse formula_id with different variables
-        calc_resp = svc.calculate_score(CalculateScoreRequest(
-            formula_id=pipeline_resp.formula_id,
+        resp2 = svc.calculate_score(CalculateScoreRequest(
+            formula_id=1,
             variables={"age": 90, "weight": 45, "serum_creatinine": 3.0, "is_female": True},
         ))
 
-        assert calc_resp.score_name == "Cockcroft_Gault_Real"
-        assert calc_resp.global_score != pipeline_resp.global_score
+        assert resp1.score_name == resp2.score_name
+        assert resp1.global_score != resp2.global_score

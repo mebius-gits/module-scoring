@@ -24,8 +24,11 @@ class AstConverter:
         # 1. 處理所有模組的 variables, formulas, rules
         for module in schema.modules:
             # 變數
-            for var_name, var_type in module.variables.items():
-                ast["variables"][var_name] = var_type
+            for var_name, var_def in module.variables.items():
+                ast["variables"][var_name] = {
+                    "type": var_def.type,
+                    "description": var_def.description,
+                }
 
             # 公式
             for formula in module.formulas:

@@ -4,7 +4,8 @@
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from fastapi import Depends, Header
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
@@ -12,6 +13,8 @@ from app.common.exceptions import ForbiddenException, UnauthorizedException
 from app.infra.db import get_db
 from app.infra.settings import settings
 from app.repositories.user_repo import UserModel, UserRepo
+
+_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -29,13 +32,13 @@ def create_access_token(user_id: int, role: str) -> str:
 
 
 def get_current_user(
-    authorization: str = Header(default="", alias="Authorization"),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     db: Session = Depends(get_db),
 ) -> UserModel:
     """解析 JWT Token 並回傳目前登入的使用者"""
-    if not authorization.startswith("Bearer "):
+    if credentials is None:
         raise UnauthorizedException("缺少或無效的 Authorization Header")
-    token = authorization[7:]
+    token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
         user_id = int(payload["sub"])

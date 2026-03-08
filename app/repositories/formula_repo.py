@@ -19,6 +19,7 @@ class FormulaModel(Base):
     department_id = Column(
         Integer, ForeignKey("departments.id", ondelete="CASCADE"), nullable=False
     )
+    abbreviation = Column(String(50), nullable=True, comment="公式縮寫")
     name = Column(String(255), nullable=False, index=True)
     description = Column(String(500), nullable=True)
     ast_data = Column(JSON, nullable=False)
@@ -54,6 +55,7 @@ class FormulaRepo:
     def create(self, department_id: int, data: FormulaCreate, created_by: int | None = None) -> FormulaModel:
         formula = FormulaModel(
             department_id=department_id,
+            abbreviation=data.abbreviation,
             name=data.name,
             description=data.description,
             ast_data=data.ast_data,

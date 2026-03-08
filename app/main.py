@@ -149,6 +149,19 @@ def _build_filtered_openapi(spec_key: str, root_path: str = "") -> dict:
         k: v for k, v in all_schemas.items() if k in used_schemas
     }
 
+    components = {}
+    if filtered_schemas:
+        components["schemas"] = filtered_schemas
+    # 加入 securitySchemes 讓 Swagger UI 顯示 Authorize 按鈕
+    components["securitySchemes"] = {
+        "HTTPBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "輸入 JWT Token（不需加 Bearer 前綴）",
+        }
+    }
+
     result = {
         "openapi": full.get("openapi", "3.1.0"),
         "info": {
@@ -157,7 +170,8 @@ def _build_filtered_openapi(spec_key: str, root_path: str = "") -> dict:
             "version": cfg["version"],
         },
         "paths": filtered_paths,
-        "components": {"schemas": filtered_schemas} if filtered_schemas else {},
+        "components": components,
+        "security": [{"HTTPBearer": []}],
     }
     if root_path:
         result["servers"] = [{"url": root_path}]
@@ -186,7 +200,8 @@ SwaggerUIBundle({{
     "urls.primaryName": "V1 - Scoring System",
     dom_id: "#swagger-ui",
     presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-    layout: "StandaloneLayout"
+    layout: "StandaloneLayout",
+    persistAuthorization: true
 }});
 </script>
 </body></html>"""
