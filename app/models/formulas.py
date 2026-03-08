@@ -2,9 +2,17 @@
 Formulas 相關的 Pydantic Schemas（Request / Response）。
 """
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
+
+
+class FormulaStatus(str, Enum):
+    draft = "draft"
+    pending_review = "pending_review"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class FormulaCreate(BaseModel):
@@ -32,7 +40,17 @@ class FormulaResponse(BaseModel):
     ast_data: Dict[str, Any]
     yaml_content: str
     is_active: bool = True
+    status: FormulaStatus = FormulaStatus.draft
+    created_by: Optional[int] = None
+    reviewed_by: Optional[int] = None
+    reviewed_at: Optional[datetime] = None
+    review_comment: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class ReviewAction(BaseModel):
+    """審核動作請求（核准/駁回）"""
+    comment: Optional[str] = Field(None, max_length=1000, description="審核意見")

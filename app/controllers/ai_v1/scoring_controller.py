@@ -4,6 +4,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.common.auth import require_role
 from app.infra.db import get_db
 from app.infra.clients.gemini_client import GeminiClient
 from app.models.scoring import (
@@ -12,6 +13,7 @@ from app.models.scoring import (
 )
 from app.repositories.patient_field_repo import PatientFieldRepo
 from app.repositories.scoring_repo import ScoringRepo
+from app.repositories.user_repo import UserModel
 from app.services.ai.scoring_service import ScoringService
 
 router = APIRouter(
@@ -38,6 +40,7 @@ def get_scoring_service() -> ScoringService:
 )
 def chat(
     req: ChatRequest,
+    current_user: UserModel = require_role("admin", "reviewer", "builder"),
     db: Session = Depends(get_db),
     svc: ScoringService = Depends(get_scoring_service),
 ):

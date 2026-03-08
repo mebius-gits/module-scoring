@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # 設為 false 可關閉 /docs Swagger UI（正式環境建議關閉）
     ENABLE_SWAGGER_UI: bool = True
 
+    # ── JWT 認證 ──────────────────────────────────────────
+    JWT_SECRET_KEY: str = "change-me-to-a-random-secret"
+    JWT_EXPIRE_MINUTES: int = 480
+
     # ── 速率限制 (Rate Limit Stub) ───────────────────────
     AI_RATE_LIMIT_PER_KEY: int = 100
 

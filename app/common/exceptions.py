@@ -27,3 +27,8 @@ class UnauthorizedException(DomainException):
 class ValidationException(DomainException):
     """業務邏輯驗證失敗時拋出，對應 HTTP 422"""
     pass
+
+
+class ForbiddenException(DomainException):
+    """權限不足時拋出，對應 HTTP 403"""
+    pass

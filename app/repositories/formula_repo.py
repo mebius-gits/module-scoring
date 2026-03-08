@@ -24,6 +24,14 @@ class FormulaModel(Base):
     ast_data = Column(JSON, nullable=False)
     yaml_content = Column(Text, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+
+    # ── 審核機制欄位 ────────────────────────────────────────
+    status = Column(String(20), nullable=False, default="draft", server_default="draft")
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_comment = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -31,8 +39,10 @@ class FormulaModel(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    # Relationship back to department
+    # Relationships
     department = relationship("DepartmentModel", back_populates="formulas")
+    creator = relationship("UserModel", foreign_keys=[created_by])
+    reviewer = relationship("UserModel", foreign_keys=[reviewed_by])
 
 
 class FormulaRepo:
@@ -41,13 +51,15 @@ class FormulaRepo:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, department_id: int, data: FormulaCreate) -> FormulaModel:
+    def create(self, department_id: int, data: FormulaCreate, created_by: int | None = None) -> FormulaModel:
         formula = FormulaModel(
             department_id=department_id,
             name=data.name,
             description=data.description,
             ast_data=data.ast_data,
             yaml_content=data.yaml_content,
+            status="draft",
+            created_by=created_by,
         )
         self.db.add(formula)
         self.db.commit()
@@ -93,3 +105,40 @@ class FormulaRepo:
         self.db.delete(formula)
         self.db.commit()
         return True
+
+    # ── 審核相關 ──────────────────────────────────────────
+
+    def set_status(self, formula_id: int, status: str) -> Optional[FormulaModel]:
+        formula = self.get_by_id(formula_id)
+        if formula is None:
+            return None
+        formula.status = status
+        self.db.commit()
+        self.db.refresh(formula)
+        return formula
+
+    def set_review(
+        self,
+        formula_id: int,
+        status: str,
+        reviewed_by: int,
+        review_comment: Optional[str] = None,
+    ) -> Optional[FormulaModel]:
+        formula = self.get_by_id(formula_id)
+        if formula is None:
+            return None
+        formula.status = status
+        formula.reviewed_by = reviewed_by
+        formula.reviewed_at = datetime.now(timezone.utc)
+        formula.review_comment = review_comment
+        self.db.commit()
+        self.db.refresh(formula)
+        return formula
+
+    def list_by_status(self, status: str) -> List[FormulaModel]:
+        return (
+            self.db.query(FormulaModel)
+            .filter(FormulaModel.status == status)
+            .order_by(FormulaModel.id)
+            .all()
+        )

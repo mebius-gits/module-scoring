@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.common.exceptions import (
+    ForbiddenException,
     NotFoundException,
     RateLimitException,
     UnauthorizedException,
@@ -17,6 +18,7 @@ from app.common.exceptions import (
 )
 
 # ── Controllers ───────────────────────────────────────────────
+from app.controllers.api_v1 import auth_controller
 from app.controllers.api_v1 import items_controller
 from app.controllers.api_v1 import departments_controller
 from app.controllers.api_v1 import formulas_controller
@@ -31,6 +33,7 @@ from app.infra.db import Base, engine, SessionLocal
 from app.repositories.department_repo import DepartmentModel  # noqa: F401
 from app.repositories.formula_repo import FormulaModel  # noqa: F401
 from app.repositories.patient_field_repo import PatientFieldModel  # noqa: F401
+from app.repositories.user_repo import UserModel  # noqa: F401
 
 # ── 開發用：自動建立資料表（正式環境請改用 Alembic）
 Base.metadata.create_all(bind=engine)
@@ -66,6 +69,11 @@ async def unauthorized_handler(request: Request, exc: UnauthorizedException):
     return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
+@app.exception_handler(ForbiddenException)
+async def forbidden_handler(request: Request, exc: ForbiddenException):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
 @app.exception_handler(RateLimitException)
 async def rate_limit_handler(request: Request, exc: RateLimitException):
     return JSONResponse(status_code=429, content={"detail": str(exc)})
@@ -76,8 +84,8 @@ async def validation_handler(request: Request, exc: ValidationException):
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
-# ── 掛載路由 ─────────────────────────────────────────────────
-# V1：科別、公式、病人欄位、AI 聊天
+# ── 掛載路由 ─────────────────────────────────────────────────# Auth
+app.include_router(auth_controller.router)# V1：科別、公式、病人欄位、AI 聊天
 app.include_router(departments_controller.router)
 app.include_router(formulas_controller.router)
 app.include_router(patient_fields_controller.router)
