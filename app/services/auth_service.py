@@ -2,7 +2,7 @@
 Auth Service：封裝使用者註冊、登入的商業邏輯。
 """
 from app.common.auth import create_access_token, hash_password, verify_password
-from app.common.exceptions import UnauthorizedException, ValidationException
+from app.common.exceptions import NotFoundException, UnauthorizedException, ValidationException
 from app.models.users import UserCreate, UserResponse, TokenResponse
 from app.repositories.user_repo import UserRepo
 
@@ -34,3 +34,13 @@ class AuthService:
             access_token=token,
             user=UserResponse.model_validate(user),
         )
+
+    def list_users(self) -> list[UserResponse]:
+        users = self.repo.list_all()
+        return [UserResponse.model_validate(u) for u in users]
+
+    def update_role(self, user_id: int, role: str) -> UserResponse:
+        user = self.repo.update_role(user_id, role)
+        if user is None:
+            raise NotFoundException(f"找不到使用者 ID={user_id}")
+        return UserResponse.model_validate(user)

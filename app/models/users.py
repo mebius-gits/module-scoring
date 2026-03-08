@@ -28,6 +28,11 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UpdateUserRole(BaseModel):
+    """更新使用者角色"""
+    role: UserRole
+
+
 class UserResponse(BaseModel):
     """使用者回應"""
     id: int

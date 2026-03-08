@@ -60,3 +60,15 @@ class UserRepo:
 
     def count(self) -> int:
         return self.db.query(UserModel).count()
+
+    def list_all(self) -> list[UserModel]:
+        return self.db.query(UserModel).order_by(UserModel.id).all()
+
+    def update_role(self, user_id: int, role: str) -> Optional[UserModel]:
+        user = self.get_by_id(user_id)
+        if user is None:
+            return None
+        user.role = role
+        self.db.commit()
+        self.db.refresh(user)
+        return user

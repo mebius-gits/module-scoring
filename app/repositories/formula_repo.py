@@ -4,8 +4,8 @@ Formula Repository：封裝 Formulas 的 SQLAlchemy ORM Model 與資料存取操
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, JSON
-from sqlalchemy.orm import Session, relationship
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Session, joinedload, relationship
 
 from app.infra.db import Base
 from app.models.formulas import FormulaCreate, FormulaUpdate
@@ -22,7 +22,6 @@ class FormulaModel(Base):
     abbreviation = Column(String(50), nullable=True, comment="公式縮寫")
     name = Column(String(255), nullable=False, index=True)
     description = Column(String(500), nullable=True)
-    ast_data = Column(JSON, nullable=False)
     yaml_content = Column(Text, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default="1")
 
@@ -58,7 +57,6 @@ class FormulaRepo:
             abbreviation=data.abbreviation,
             name=data.name,
             description=data.description,
-            ast_data=data.ast_data,
             yaml_content=data.yaml_content,
             status="draft",
             created_by=created_by,
@@ -69,7 +67,10 @@ class FormulaRepo:
         return formula
 
     def list_all(self, department_id: Optional[int] = None, include_inactive: bool = False) -> List[FormulaModel]:
-        query = self.db.query(FormulaModel)
+        query = self.db.query(FormulaModel).options(
+            joinedload(FormulaModel.creator),
+            joinedload(FormulaModel.reviewer),
+        )
         if department_id is not None:
             query = query.filter(FormulaModel.department_id == department_id)
         if not include_inactive:
@@ -77,9 +78,15 @@ class FormulaRepo:
         return query.order_by(FormulaModel.id).all()
 
     def get_by_id(self, formula_id: int) -> Optional[FormulaModel]:
-        return self.db.query(FormulaModel).filter(
-            FormulaModel.id == formula_id
-        ).first()
+        return (
+            self.db.query(FormulaModel)
+            .options(
+                joinedload(FormulaModel.creator),
+                joinedload(FormulaModel.reviewer),
+            )
+            .filter(FormulaModel.id == formula_id)
+            .first()
+        )
 
     def update(self, formula_id: int, data: FormulaUpdate) -> Optional[FormulaModel]:
         formula = self.get_by_id(formula_id)
@@ -140,6 +147,10 @@ class FormulaRepo:
     def list_by_status(self, status: str) -> List[FormulaModel]:
         return (
             self.db.query(FormulaModel)
+            .options(
+                joinedload(FormulaModel.creator),
+                joinedload(FormulaModel.reviewer),
+            )
             .filter(FormulaModel.status == status)
             .order_by(FormulaModel.id)
             .all()

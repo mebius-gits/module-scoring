@@ -3,9 +3,9 @@ Formulas 相關的 Pydantic Schemas（Request / Response）。
 """
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class FormulaStatus(str, Enum):
@@ -20,7 +20,6 @@ class FormulaCreate(BaseModel):
     abbreviation: Optional[str] = Field(None, max_length=50, description="公式縮寫（選填）")
     name: str = Field(..., min_length=1, max_length=255, description="公式名稱")
     description: Optional[str] = Field(None, max_length=500, description="公式描述（選填）")
-    ast_data: Dict[str, Any] = Field(..., description="AST JSON 資料")
     yaml_content: str = Field(..., description="YAML 公式字串")
 
 
@@ -29,8 +28,16 @@ class FormulaUpdate(BaseModel):
     abbreviation: Optional[str] = Field(None, max_length=50)
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=500)
-    ast_data: Optional[Dict[str, Any]] = None
     yaml_content: Optional[str] = None
+
+
+class UserBrief(BaseModel):
+    """精簡使用者資訊（嵌入用）"""
+    id: int
+    username: str
+    display_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
 
 
 class FormulaResponse(BaseModel):
@@ -40,16 +47,32 @@ class FormulaResponse(BaseModel):
     abbreviation: Optional[str] = None
     name: str
     description: Optional[str] = None
-    ast_data: Dict[str, Any]
     yaml_content: str
     is_active: bool = True
     status: FormulaStatus = FormulaStatus.draft
-    created_by: Optional[int] = None
-    reviewed_by: Optional[int] = None
+    created_by: Optional[UserBrief] = None
+    reviewed_by: Optional[UserBrief] = None
     reviewed_at: Optional[datetime] = None
     review_comment: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _map_relationships(cls, data):
+        """將 ORM relationship (creator/reviewer) 對應到 created_by/reviewed_by。"""
+        if hasattr(data, "__dict__"):
+            # ORM object
+            obj = data
+            d = {}
+            for f in ["id", "department_id", "abbreviation", "name", "description",
+                       "yaml_content", "is_active", "status", "reviewed_at",
+                       "review_comment", "created_at", "updated_at"]:
+                d[f] = getattr(obj, f, None)
+            d["created_by"] = getattr(obj, "creator", None)
+            d["reviewed_by"] = getattr(obj, "reviewer", None)
+            return d
+        return data
 
     model_config = {"from_attributes": True}
 

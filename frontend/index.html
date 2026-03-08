@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Module Scoring</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;background:#f5f5f5;color:#222;font-size:13px;line-height:1.5}
+a{color:#444;text-decoration:none}
+
+/* top */
+.topbar{padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ddd;background:#fff}
+.topbar h1{font-size:14px;font-weight:600;letter-spacing:.3px;color:#333}
+.topbar .cfg{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+.topbar .cfg input{padding:3px 8px;border:1px solid #ccc;border-radius:3px;font-size:12px;width:260px;color:#555}
+
+/* columns */
+.columns{display:grid;grid-template-columns:5fr 4fr 3fr;min-height:calc(100vh - 42px)}
+@media(max-width:1000px){.columns{grid-template-columns:1fr}}
+.col{border-right:1px solid #e5e5e5;padding:16px 18px;overflow-y:auto}
+.col:last-child{border-right:none}
+.col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:14px}
+
+/* login */
+.login-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.login-row .f{flex:1;min-width:0}
+.login-info{font-size:11px;color:#999;margin-bottom:12px}
+.login-info b{color:#555}
+
+/* fields */
+.f{margin-bottom:8px}
+.f label{display:block;font-size:11px;color:#888;margin-bottom:2px;font-weight:500}
+.f input,.f select,.f textarea{width:100%;padding:6px 8px;border:1px solid #d5d5d5;border-radius:3px;font-size:12px;font-family:inherit;background:#fff;color:#333}
+.f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:#999}
+.f textarea{resize:vertical;min-height:56px}
+
+/* buttons */
+.btn{display:inline-block;padding:5px 12px;font-size:11px;font-weight:600;border:1px solid #bbb;border-radius:3px;cursor:pointer;background:#fff;color:#444;transition:background .1s,border-color .1s}
+.btn:hover{background:#f0f0f0;border-color:#999}
+.btn-dark{background:#333;color:#fff;border-color:#333}
+.btn-dark:hover{background:#555;border-color:#555}
+.btn-sm{padding:3px 8px;font-size:11px}
+.btn-group{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+
+/* status */
+.msg{margin-top:6px;padding:6px 8px;border-radius:3px;font-size:11px;white-space:pre-wrap;word-break:break-all;display:none;max-height:140px;overflow-y:auto}
+.msg.ok{display:block;background:#f0f0f0;color:#333;border:1px solid #ddd}
+.msg.err{display:block;background:#f5f0f0;color:#8a3030;border:1px solid #e0cdcd}
+
+/* badges */
+.tag{display:inline-block;padding:1px 7px;font-size:10px;font-weight:600;border-radius:2px;text-transform:uppercase;letter-spacing:.3px;border:1px solid}
+.tag-draft{color:#888;border-color:#ccc;background:#f5f5f5}
+.tag-pending_review{color:#886a00;border-color:#d4c07a;background:#faf6e8}
+.tag-approved{color:#3a7a3a;border-color:#a8d4a8;background:#f0f8f0}
+.tag-rejected{color:#8a3030;border-color:#d4a8a8;background:#f8f0f0}
+.tag-admin{color:#8a3030;border-color:#d4a8a8;background:#f8f0f0}
+.tag-reviewer{color:#5a5a8a;border-color:#b0b0d4;background:#f0f0f8}
+.tag-builder{color:#3a6a7a;border-color:#a0c8d4;background:#f0f6f8}
+.tag-user{color:#888;border-color:#ccc;background:#f5f5f5}
+
+/* tabs */
+.tabs{display:flex;gap:0;margin:12px 0 10px;border-bottom:1px solid #ddd}
+.tabs button{padding:5px 12px;font-size:11px;font-weight:600;background:none;border:none;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .1s}
+.tabs button.active{color:#333;border-bottom-color:#333}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* section */
+.sec{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
+
+/* formula items */
+.item{padding:10px 0;border-bottom:1px solid #eee}
+.item:last-child{border-bottom:none}
+.item h4{font-size:13px;font-weight:600;color:#333;margin-bottom:3px}
+.item .meta{font-size:11px;color:#999;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.item .comment{font-size:11px;color:#8a3030;margin:4px 0}
+
+/* user table */
+.utbl{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.utbl th,.utbl td{text-align:left;padding:5px 6px;border-bottom:1px solid #eee}
+.utbl th{font-weight:600;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.utbl select{padding:2px 4px;border:1px solid #d5d5d5;border-radius:3px;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Module Scoring</h1>
+  <div class="cfg">
+    <label>API</label>
+    <input id="apiBase" value="http://localhost:8000/api" />
+  </div>
+</div>
+
+<div class="columns">
+
+  <!-- LEFT: Builder -->
+  <div class="col">
+    <div class="col-title">Builder</div>
+
+    <form id="builderLoginForm" class="login-row">
+      <div class="f"><label>Account</label><input id="bUser" required /></div>
+      <div class="f"><label>Password</label><input id="bPass" type="password" required /></div>
+      <button class="btn btn-dark" type="submit">Login</button>
+      <button class="btn" type="button" onclick="doLogout('builder')">Logout</button>
+    </form>
+    <div class="login-info" id="builderInfo">Not logged in</div>
+    <div id="builderLoginStatus" class="msg"></div>
+
+    <div class="tabs">
+      <button class="active" onclick="switchTab('builder','create',this)">Create</button>
+      <button onclick="switchTab('builder','mylist',this)">My Formulas</button>
+    </div>
+
+    <div id="builder-create" class="tab-content active">
+      <div class="f"><label>Department ID</label><input id="bDeptId" type="number" value="1" min="1" /></div>
+      <div class="f"><label>Abbreviation</label><input id="bAbbrev" placeholder="e.g. GCS" /></div>
+      <div class="f"><label>Name *</label><input id="bName" required placeholder="e.g. Glasgow Coma Scale" /></div>
+      <div class="f"><label>Description</label><input id="bDesc" placeholder="optional" /></div>
+      <div class="f"><label>YAML *</label><textarea id="bYaml" rows="6" placeholder="score_name: GCS&#10;variables:&#10;  eye_response: int&#10;  verbal_response: int&#10;  motor_response: int&#10;formulas:&#10;  total: eye_response + verbal_response + motor_response&#10;output: total"></textarea></div>
+      <button class="btn btn-dark" onclick="createFormula()">Create Formula</button>
+      <div id="builderCreateStatus" class="msg"></div>
+    </div>
+
+    <div id="builder-mylist" class="tab-content">
+      <button class="btn btn-sm" onclick="loadMyFormulas()" style="margin-bottom:8px">Reload</button>
+      <div id="builderFormulas"><span style="color:#aaa">Login first, then click Reload</span></div>
+      <div id="builderListStatus" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MIDDLE: Reviewer -->
+  <div class="col">
+    <div class="col-title">Reviewer</div>
+
+    <form id="reviewerLoginForm" class="login-row">
+      <div class="f"><label>Account</label><input id="rUser" required /></div>
+      <div class="f"><label>Password</label><input id="rPass" type="password" required /></div>
+      <button class="btn btn-dark" type="submit">Login</button>
+      <button class="btn" type="button" onclick="doLogout('reviewer')">Logout</button>
+    </form>
+    <div class="login-info" id="reviewerInfo">Not logged in</div>
+    <div id="reviewerLoginStatus" class="msg"></div>
+
+    <div class="tabs">
+      <button class="active" onclick="switchTab('reviewer','pending',this)">Pending Review</button>
+      <button onclick="switchTab('reviewer','all',this)">All Formulas</button>
+    </div>
+
+    <div id="reviewer-pending" class="tab-content active">
+      <button class="btn btn-sm" onclick="loadPendingReview()" style="margin-bottom:8px">Reload</button>
+      <div id="reviewerPending"><span style="color:#aaa">Login first, then click Reload</span></div>
+      <div id="reviewerPendingStatus" class="msg"></div>
+    </div>
+
+    <div id="reviewer-all" class="tab-content">
+      <button class="btn btn-sm" onclick="loadAllFormulas()" style="margin-bottom:8px">Reload</button>
+      <div id="reviewerAll"><span style="color:#aaa">Login first, then click Reload</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Admin -->
+  <div class="col">
+    <div class="col-title">Admin</div>
+
+    <div class="sec">Register</div>
+    <form id="registerForm">
+      <div class="f"><label>Username (3-50)</label><input id="regUser" required minlength="3" maxlength="50" /></div>
+      <div class="f"><label>Password (6-128)</label><input id="regPass" type="password" required minlength="6" maxlength="128" /></div>
+      <div class="f"><label>Display Name</label><input id="regDisplay" maxlength="100" /></div>
+      <button class="btn btn-dark" type="submit">Register</button>
+    </form>
+    <div id="registerStatus" class="msg"></div>
+
+    <div class="sec">Users &amp; Roles</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:6px">Login as Admin in Builder or Reviewer panel first</div>
+    <button class="btn btn-sm" onclick="loadUsers()">Load Users</button>
+    <div id="usersContainer"></div>
+    <div id="adminStatus" class="msg"></div>
+  </div>
+
+</div>
+
+<script>
+var tokens = { builder: '', reviewer: '' };
+var users = { builder: null, reviewer: null };
+
+function base() { return document.getElementById('apiBase').value.replace(/\/+$/, ''); }
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(s));
+  return d.innerHTML;
+}
+
+function show(id, ok, msg) {
+  var el = document.getElementById(id);
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  el.textContent = typeof msg === 'string' ? msg : JSON.stringify(msg, null, 2);
+}
+
+function statusTag(s) { return '<span class="tag tag-' + s + '">' + esc(s) + '</span>'; }
+function roleTag(r) { return '<span class="tag tag-' + r + '">' + esc(r) + '</span>'; }
+
+function creatorLabel(f) {
+  if (!f.created_by) return '—';
+  if (typeof f.created_by === 'object') return esc(f.created_by.display_name || f.created_by.username);
+  return '#' + f.created_by;
+}
+
+function switchTab(panel, tab, btn) {
+  document.querySelectorAll('#' + panel + '-create,#' + panel + '-mylist,#' + panel + '-pending,#' + panel + '-all').forEach(function(el) { el.classList.remove('active'); });
+  var target = document.getElementById(panel + '-' + tab);
+  if (target) target.classList.add('active');
+  btn.parentElement.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+async function api(method, path, body, role) {
+  var headers = { 'Content-Type': 'application/json' };
+  if (role && tokens[role]) headers['Authorization'] = 'Bearer ' + tokens[role];
+  var opts = { method: method, headers: headers };
+  if (body) opts.body = JSON.stringify(body);
+  var res = await fetch(base() + path, opts);
+  var data = await res.json().catch(function() { return null; });
+  return { ok: res.ok, status: res.status, data: data };
+}
+
+function getAdminToken() {
+  if (users.builder && users.builder.role === 'admin') return tokens.builder;
+  if (users.reviewer && users.reviewer.role === 'admin') return tokens.reviewer;
+  return tokens.builder || tokens.reviewer;
+}
+
+// Login / Logout
+async function doLogin(role, username, password) {
+  var r = await api('POST', '/v1/auth/login', { username: username, password: password });
+  if (r.ok) {
+    tokens[role] = r.data.access_token;
+    users[role] = r.data.user;
+    document.getElementById(role + 'Info').innerHTML = '<b>' + esc(r.data.user.display_name || r.data.user.username) + '</b> / ' + roleTag(r.data.user.role);
+    show(role + 'LoginStatus', true, 'Logged in as ' + r.data.user.role);
+  } else {
+    show(role + 'LoginStatus', false, r.data && r.data.detail ? r.data.detail : 'Error ' + r.status);
+  }
+}
+
+function doLogout(role) {
+  tokens[role] = '';
+  users[role] = null;
+  document.getElementById(role + 'Info').textContent = 'Not logged in';
+  show(role + 'LoginStatus', true, 'Logged out');
+}
+
+document.getElementById('builderLoginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  doLogin('builder', document.getElementById('bUser').value.trim(), document.getElementById('bPass').value);
+});
+document.getElementById('reviewerLoginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  doLogin('reviewer', document.getElementById('rUser').value.trim(), document.getElementById('rPass').value);
+});
+
+// Builder: Create
+async function createFormula() {
+  var deptId = parseInt(document.getElementById('bDeptId').value);
+  var body = { name: document.getElementById('bName').value.trim(), yaml_content: document.getElementById('bYaml').value };
+  var abbrev = document.getElementById('bAbbrev').value.trim();
+  if (abbrev) body.abbreviation = abbrev;
+  var desc = document.getElementById('bDesc').value.trim();
+  if (desc) body.description = desc;
+
+  var r = await api('POST', '/v1/departments/' + deptId + '/formulas', body, 'builder');
+  if (r.ok) {
+    show('builderCreateStatus', true, 'Created. ID=' + r.data.id + '  status=' + r.data.status);
+  } else {
+    show('builderCreateStatus', false, 'Failed (' + r.status + ')\n' + JSON.stringify(r.data, null, 2));
+  }
+}
+
+// Builder: My Formulas
+async function loadMyFormulas() {
+  var r = await api('GET', '/v1/formulas', null, 'builder');
+  if (!r.ok) { show('builderListStatus', false, 'Error ' + r.status); return; }
+  var list = r.data;
+  if (!list.length) { document.getElementById('builderFormulas').innerHTML = '<span style="color:#aaa">No formulas</span>'; return; }
+
+  var html = '';
+  list.forEach(function(f) {
+    html += '<div class="item">'
+      + '<h4>' + esc(f.name) + (f.abbreviation ? ' <small style="color:#999">(' + esc(f.abbreviation) + ')</small>' : '') + '</h4>'
+      + '<div class="meta"><span>ID ' + f.id + '</span><span>Dept ' + f.department_id + '</span>'
+      + '<span>' + statusTag(f.status) + '</span></div>';
+
+    if (f.review_comment) html += '<div class="comment">Review: ' + esc(f.review_comment) + '</div>';
+
+    html += '<div class="btn-group">';
+    if (f.status === 'draft' || f.status === 'rejected') {
+      html += '<button class="btn btn-sm" onclick="submitReview(' + f.id + ')">Submit Review</button>';
+    }
+    if (f.status === 'pending_review') {
+      html += '<button class="btn btn-sm" onclick="revokeReview(' + f.id + ')">Revoke</button>';
+    }
+    html += '</div></div>';
+  });
+  document.getElementById('builderFormulas').innerHTML = html;
+}
+
+async function submitReview(id) {
+  var r = await api('POST', '/v1/formulas/' + id + '/submit-review', null, 'builder');
+  if (r.ok) { show('builderListStatus', true, 'Formula #' + id + ' submitted'); }
+  else { show('builderListStatus', false, JSON.stringify(r.data)); }
+  loadMyFormulas();
+}
+
+async function revokeReview(id) {
+  var r = await api('POST', '/v1/formulas/' + id + '/revoke-review', null, 'builder');
+  if (r.ok) { show('builderListStatus', true, 'Formula #' + id + ' revoked'); }
+  else { show('builderListStatus', false, JSON.stringify(r.data)); }
+  loadMyFormulas();
+}
+
+// Reviewer: Pending
+async function loadPendingReview() {
+  var r = await api('GET', '/v1/formulas-pending-review', null, 'reviewer');
+  if (!r.ok) { show('reviewerPendingStatus', false, r.status + ' ' + JSON.stringify(r.data)); return; }
+  var list = r.data;
+  if (!list.length) {
+    document.getElementById('reviewerPending').innerHTML =
+      '<button class="btn btn-sm" onclick="loadPendingReview()" style="margin-bottom:8px">Reload</button>'
+      + '<div style="color:#aaa;margin-top:8px">No pending formulas</div>';
+    return;
+  }
+
+  var html = '<button class="btn btn-sm" onclick="loadPendingReview()" style="margin-bottom:8px">Reload</button>';
+  list.forEach(function(f) {
+    var cid = 'comment_' + f.id;
+    html += '<div class="item">'
+      + '<h4>' + esc(f.name) + (f.abbreviation ? ' <small style="color:#999">(' + esc(f.abbreviation) + ')</small>' : '') + '</h4>'
+      + '<div class="meta"><span>ID ' + f.id + '</span><span>Dept ' + f.department_id + '</span>'
+      + '<span>By: ' + creatorLabel(f) + '</span></div>'
+      + '<details style="margin:4px 0 6px"><summary style="cursor:pointer;font-size:11px;color:#999">YAML</summary>'
+      + '<pre style="font-size:11px;background:#f0f0f0;padding:8px;border-radius:3px;max-height:180px;overflow:auto;margin-top:4px">' + esc(f.yaml_content) + '</pre></details>'
+      + '<div class="f"><label>Comment</label><input id="' + cid + '" placeholder="optional review note" /></div>'
+      + '<div class="btn-group">'
+      + '<button class="btn btn-sm btn-dark" onclick="approveFormula(' + f.id + ',\'' + cid + '\')">Approve</button>'
+      + '<button class="btn btn-sm" onclick="rejectFormula(' + f.id + ',\'' + cid + '\')">Reject</button>'
+      + '</div></div>';
+  });
+  document.getElementById('reviewerPending').innerHTML = html;
+}
+
+async function approveFormula(id, commentId) {
+  var comment = document.getElementById(commentId) ? document.getElementById(commentId).value.trim() : '';
+  var body = comment ? { comment: comment } : {};
+  var r = await api('POST', '/v1/formulas/' + id + '/approve', body, 'reviewer');
+  if (r.ok) { show('reviewerPendingStatus', true, 'Formula #' + id + ' approved'); }
+  else { show('reviewerPendingStatus', false, JSON.stringify(r.data)); }
+  loadPendingReview();
+}
+
+async function rejectFormula(id, commentId) {
+  var comment = document.getElementById(commentId) ? document.getElementById(commentId).value.trim() : '';
+  var body = comment ? { comment: comment } : {};
+  var r = await api('POST', '/v1/formulas/' + id + '/reject', body, 'reviewer');
+  if (r.ok) { show('reviewerPendingStatus', true, 'Formula #' + id + ' rejected'); }
+  else { show('reviewerPendingStatus', false, JSON.stringify(r.data)); }
+  loadPendingReview();
+}
+
+// Reviewer: All
+async function loadAllFormulas() {
+  var r = await api('GET', '/v1/formulas?include_inactive=true', null, 'reviewer');
+  if (!r.ok) { document.getElementById('reviewerAll').innerHTML = '<span style="color:#8a3030">Error ' + r.status + '</span>'; return; }
+  var list = r.data;
+  var html = '<button class="btn btn-sm" onclick="loadAllFormulas()" style="margin-bottom:8px">Reload</button>';
+  if (!list.length) { html += '<div style="color:#aaa;margin-top:8px">No formulas</div>'; }
+  list.forEach(function(f) {
+    html += '<div class="item">'
+      + '<h4>' + esc(f.name) + (f.abbreviation ? ' <small style="color:#999">(' + esc(f.abbreviation) + ')</small>' : '') + '</h4>'
+      + '<div class="meta"><span>ID ' + f.id + '</span><span>' + statusTag(f.status) + '</span>'
+      + '<span>' + (f.is_active ? 'active' : 'inactive') + '</span></div>'
+      + '</div>';
+  });
+  document.getElementById('reviewerAll').innerHTML = html;
+}
+
+// Admin: Register
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var body = { username: document.getElementById('regUser').value.trim(), password: document.getElementById('regPass').value };
+  var dn = document.getElementById('regDisplay').value.trim();
+  if (dn) body.display_name = dn;
+  var r = await api('POST', '/v1/auth/register', body);
+  if (r.ok) {
+    show('registerStatus', true, 'Registered: ' + r.data.username + ' / ' + r.data.role + ' / ID ' + r.data.id);
+  } else {
+    show('registerStatus', false, '(' + r.status + ') ' + JSON.stringify(r.data));
+  }
+});
+
+// Admin: Users
+async function loadUsers() {
+  var tk = getAdminToken();
+  if (!tk) { show('adminStatus', false, 'Login as Admin in another panel first'); return; }
+  var headers = { 'Authorization': 'Bearer ' + tk };
+  var res = await fetch(base() + '/v1/auth/users', { headers: headers });
+  var data = await res.json().catch(function() { return null; });
+  if (!res.ok) { show('adminStatus', false, res.status + ' ' + JSON.stringify(data)); return; }
+
+  var html = '<table class="utbl"><thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Role</th><th></th></tr></thead><tbody>';
+  data.forEach(function(u) {
+    html += '<tr><td>' + u.id + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.display_name || '-') + '</td>'
+      + '<td>' + roleTag(u.role) + '</td><td>'
+      + '<select id="arole_' + u.id + '">'
+      + '<option value="admin"' + (u.role==='admin'?' selected':'') + '>admin</option>'
+      + '<option value="reviewer"' + (u.role==='reviewer'?' selected':'') + '>reviewer</option>'
+      + '<option value="builder"' + (u.role==='builder'?' selected':'') + '>builder</option>'
+      + '<option value="user"' + (u.role==='user'?' selected':'') + '>user</option>'
+      + '</select> <button class="btn btn-sm" onclick="changeRole(' + u.id + ')">Save</button>'
+      + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('usersContainer').innerHTML = html;
+  show('adminStatus', true, data.length + ' users loaded');
+}
+
+async function changeRole(uid) {
+  var role = document.getElementById('arole_' + uid).value;
+  var tk = getAdminToken();
+  var res = await fetch(base() + '/v1/auth/users/' + uid + '/role', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+    body: JSON.stringify({ role: role })
+  });
+  var data = await res.json().catch(function() { return null; });
+  if (res.ok) {
+    show('adminStatus', true, 'User #' + uid + ' -> ' + role);
+    loadUsers();
+  } else {
+    show('adminStatus', false, JSON.stringify(data));
+  }
+}
+</script>
+</body>
+</html>
