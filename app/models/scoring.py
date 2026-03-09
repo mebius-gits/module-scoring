@@ -160,6 +160,7 @@ class VariableInfo(BaseModel):
     var_type: str = Field(..., description="變數型態: int, float, boolean")
     description: str = Field("", description="變數用途說明")
     module: str = Field(..., description="所屬模組名稱")
+    is_patient_field: bool = Field(False, description="是否為已登錄的病人欄位")
 
 
 class ExtractVariablesResponse(BaseModel):

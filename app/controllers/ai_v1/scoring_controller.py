@@ -27,6 +27,7 @@ def get_scoring_service(db: Session = Depends(get_db)) -> ScoringService:
     return ScoringService(
         formula_repo=FormulaRepo(db),
         gemini_client=GeminiClient(),
+        patient_field_repo=PatientFieldRepo(db),
     )
 
 

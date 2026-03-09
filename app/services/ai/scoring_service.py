@@ -16,6 +16,7 @@ from app.models.scoring import (
     VariableInfo,
 )
 from app.repositories.formula_repo import FormulaRepo
+from app.repositories.patient_field_repo import PatientFieldRepo
 from app.services.ai.formula_generator import FormulaGenerator
 from app.services.ai.risk_assessor import RiskAssessor
 from app.services.ai.score_calculator import ScoreCalculator
@@ -33,8 +34,10 @@ class ScoringService:
         self,
         formula_repo: FormulaRepo,
         gemini_client: GeminiClient,
+        patient_field_repo: PatientFieldRepo | None = None,
     ):
         self.formula_repo = formula_repo
+        self.patient_field_repo = patient_field_repo
         self.formula_generator = FormulaGenerator(gemini_client)
         self.yaml_parser = YamlParser()
         self.score_calculator = ScoreCalculator()
@@ -151,6 +154,13 @@ class ScoringService:
         # 解析
         schema = self.yaml_parser.parse_yaml(yaml_content)
 
+        # 取得已登錄的病人欄位名稱集合
+        patient_field_names: set[str] = set()
+        if self.patient_field_repo:
+            patient_field_names = {
+                pf.field_name for pf in self.patient_field_repo.list_all()
+            }
+
         # 萃取變數 (跨模組去重)
         seen = set()
         variables = []
@@ -163,6 +173,7 @@ class ScoringService:
                         var_type=var_def.type,
                         description=var_def.description,
                         module=module.name,
+                        is_patient_field=var_name in patient_field_names,
                     ))
 
         return ExtractVariablesResponse(

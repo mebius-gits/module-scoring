@@ -301,7 +301,8 @@ async function loadMyFormulas() {
     if (f.status === 'pending_review') {
       html += '<button class="btn btn-sm" onclick="revokeReview(' + f.id + ')">Revoke</button>';
     }
-    html += '</div></div>';
+    html += '<button class="btn btn-sm" onclick="extractVariables(' + f.id + ')">Extract Variables</button>';
+    html += '</div><div id="vars_' + f.id + '"></div></div>';
   });
   document.getElementById('builderFormulas').innerHTML = html;
 }
@@ -318,6 +319,33 @@ async function revokeReview(id) {
   if (r.ok) { show('builderListStatus', true, 'Formula #' + id + ' revoked'); }
   else { show('builderListStatus', false, JSON.stringify(r.data)); }
   loadMyFormulas();
+}
+
+async function extractVariables(formulaId) {
+  var container = document.getElementById('vars_' + formulaId);
+  if (!container) return;
+  container.innerHTML = '<span style="color:#aaa;font-size:11px">Loading...</span>';
+  var r = await api('POST', '/v1/formulas/extract-variables', { formula_id: formulaId }, 'builder');
+  if (!r.ok) {
+    container.innerHTML = '<span style="color:#8a3030;font-size:11px">Error: ' + esc(JSON.stringify(r.data)) + '</span>';
+    return;
+  }
+  var vars = r.data.variables || [];
+  if (!vars.length) {
+    container.innerHTML = '<span style="color:#aaa;font-size:11px">No variables</span>';
+    return;
+  }
+  var html = '<table class="utbl" style="margin-top:6px"><thead><tr>'
+    + '<th>Variable</th><th>Type</th><th>Module</th><th>Patient Field</th></tr></thead><tbody>';
+  vars.forEach(function(v) {
+    html += '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.var_type) + '</td>'
+      + '<td>' + esc(v.module) + '</td>'
+      + '<td>' + (v.is_patient_field
+        ? '<span class="tag tag-approved">YES</span>'
+        : '<span class="tag tag-draft">NO</span>') + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 // Reviewer: Pending

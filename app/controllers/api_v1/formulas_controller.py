@@ -24,6 +24,7 @@ from app.models.scoring import (
 )
 from app.infra.clients.gemini_client import GeminiClient
 from app.repositories.formula_repo import FormulaRepo as FormulaRepoForScoring
+from app.repositories.patient_field_repo import PatientFieldRepo
 from app.services.ai.scoring_service import ScoringService
 
 router = APIRouter(prefix="/v1")
@@ -37,6 +38,7 @@ def get_scoring_service(db: Session = Depends(get_db)) -> ScoringService:
     return ScoringService(
         formula_repo=FormulaRepoForScoring(db),
         gemini_client=GeminiClient(),
+        patient_field_repo=PatientFieldRepo(db),
     )
 
 
