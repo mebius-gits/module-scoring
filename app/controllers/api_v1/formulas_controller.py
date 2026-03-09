@@ -257,3 +257,20 @@ def convert_to_ast(
     svc: ScoringService = Depends(get_scoring_service),
 ):
     return svc.convert_to_ast(req)
+
+
+# ── Prompt Registry（查詢 AI Prompt 區塊）
+@router.get(
+    "/prompts",
+    response_model=List[Dict[str, Any]],
+    summary="列出所有 AI Prompt 區塊",
+    tags=["Prompts"],
+)
+def list_prompts(
+    current_user: UserModel = Depends(get_current_user),
+):
+    from app.services.ai.prompts import PROMPT_REGISTRY
+    return [
+        {"key": key, **meta}
+        for key, meta in PROMPT_REGISTRY.items()
+    ]

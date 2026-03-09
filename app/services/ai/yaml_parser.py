@@ -78,7 +78,6 @@ class YamlParser:
 
                 formulas.append(FormulaDefinition(
                     name=f_raw["name"],
-                    description=f_raw.get("description", ""),
                     conditions=conditions,
                     formula=f_raw.get("formula"),
                 ))

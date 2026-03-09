@@ -22,7 +22,6 @@ class ConditionBlock(BaseModel):
 class FormulaDefinition(BaseModel):
     """公式定義：支援條件公式表 (conditions) 或直接數學表達式 (formula)"""
     name: str = Field(..., description="公式名稱，可被其他公式引用")
-    description: str = Field("", description="公式用途說明")
     conditions: Optional[List[ConditionBlock]] = Field(None, description="條件公式表")
     formula: Optional[str] = Field(None, description="數學表達式，例如 'age_factor * gender_factor'")
 
@@ -141,8 +140,11 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """混合模式聊天回應：對話回覆 + 可選的 YAML 公式"""
+    """混合模式聊天回應：對話回覆 + 可選的公式描述與 YAML"""
     reply: str = Field(..., description="AI 對話回覆（繁體中文）")
+    formula_description: Optional[str] = Field(
+        None, description="公式的結構化臨床描述（繁體中文），與 generated_yaml 成對出現"
+    )
     generated_yaml: Optional[str] = Field(
         None, description="若 AI 判斷為公式請求，回傳生成的 YAML 公式字串"
     )

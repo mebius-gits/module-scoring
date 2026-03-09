@@ -80,6 +80,13 @@ a{color:#444;text-decoration:none}
 .utbl th,.utbl td{text-align:left;padding:5px 6px;border-bottom:1px solid #eee}
 .utbl th{font-weight:600;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .utbl select{padding:2px 4px;border:1px solid #d5d5d5;border-radius:3px;font-size:11px}
+
+/* prompt blocks */
+.prompt-block{margin-bottom:8px;border:1px solid #e5e5e5;border-radius:3px;overflow:hidden}
+.prompt-header{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#fafafa;cursor:pointer;font-size:11px;font-weight:600;color:#555}
+.prompt-header:hover{background:#f0f0f0}
+.prompt-body{display:none;padding:8px 10px;font-size:11px;white-space:pre-wrap;word-break:break-word;background:#fff;color:#444;max-height:240px;overflow-y:auto;border-top:1px solid #eee;font-family:monospace}
+.prompt-body.open{display:block}
 </style>
 </head>
 <body>
@@ -177,6 +184,12 @@ a{color:#444;text-decoration:none}
     <button class="btn btn-sm" onclick="loadUsers()">Load Users</button>
     <div id="usersContainer"></div>
     <div id="adminStatus" class="msg"></div>
+
+    <div class="sec">Prompt Engineering</div>
+    <button class="btn btn-sm" onclick="loadPrompts()">Load Prompts</button>
+    <div style="font-size:11px;color:#aaa;margin:4px 0 6px">Filter: <select id="promptFilter" onchange="filterPrompts()" style="font-size:11px;padding:2px 4px;border:1px solid #d5d5d5;border-radius:3px"><option value="">All</option><option value="role">Role</option><option value="structure">Structure</option><option value="syntax">Syntax</option><option value="constraint">Constraint</option><option value="behavior">Behavior</option></select></div>
+    <div id="promptsContainer"></div>
+    <div id="promptStatus" class="msg"></div>
   </div>
 
 </div>
@@ -468,6 +481,50 @@ async function changeRole(uid) {
   } else {
     show('adminStatus', false, JSON.stringify(data));
   }
+}
+
+// Admin: Prompts
+var _allPrompts = [];
+
+async function loadPrompts() {
+  var tk = getAdminToken();
+  if (!tk) { show('promptStatus', false, 'Login as Admin in another panel first'); return; }
+  var headers = { 'Authorization': 'Bearer ' + tk };
+  var res = await fetch(base() + '/v1/prompts', { headers: headers });
+  var data = await res.json().catch(function() { return null; });
+  if (!res.ok) { show('promptStatus', false, res.status + ' ' + JSON.stringify(data)); return; }
+  _allPrompts = data;
+  renderPrompts(data);
+  show('promptStatus', true, data.length + ' prompt blocks loaded');
+}
+
+function renderPrompts(list) {
+  if (!list.length) {
+    document.getElementById('promptsContainer').innerHTML = '<span style="color:#aaa">No prompts</span>';
+    return;
+  }
+  var html = '';
+  list.forEach(function(p, i) {
+    html += '<div class="prompt-block" data-cat="' + esc(p.category) + '">' +
+      '<div class="prompt-header" onclick="togglePrompt(' + i + ')">' +
+        '<span>' + esc(p.label) + '</span>' +
+        '<span class="tag tag-' + esc(p.category) + '">' + esc(p.category) + '</span>' +
+      '</div>' +
+      '<div class="prompt-body" id="pbody_' + i + '">' + esc(p.content) + '</div>' +
+    '</div>';
+  });
+  document.getElementById('promptsContainer').innerHTML = html;
+}
+
+function togglePrompt(i) {
+  var el = document.getElementById('pbody_' + i);
+  if (el) el.classList.toggle('open');
+}
+
+function filterPrompts() {
+  var cat = document.getElementById('promptFilter').value;
+  if (!cat) { renderPrompts(_allPrompts); return; }
+  renderPrompts(_allPrompts.filter(function(p) { return p.category === cat; }));
 }
 </script>
 </body>

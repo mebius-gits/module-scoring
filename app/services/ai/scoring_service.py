@@ -62,7 +62,7 @@ class ScoringService:
         Returns:
             ChatResponse: 包含 reply + 可選 generated_yaml
         """
-        reply_text, yaml_content = self.formula_generator.chat(
+        reply_text, formula_description, yaml_content = self.formula_generator.chat(
             message=message,
             patient_fields=patient_fields,
             attachments=attachments,
@@ -70,6 +70,7 @@ class ScoringService:
 
         return ChatResponse(
             reply=reply_text,
+            formula_description=formula_description,
             generated_yaml=yaml_content,
         )
 
