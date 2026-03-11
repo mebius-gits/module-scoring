@@ -4,45 +4,10 @@ Formula Repository：封裝 Formulas 的 SQLAlchemy ORM Model 與資料存取操
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Session, joinedload, relationship
+from sqlalchemy.orm import Session, joinedload
 
-from app.infra.db import Base
-from app.models.formulas import FormulaCreate, FormulaUpdate
-
-
-class FormulaModel(Base):
-    """Formulas ORM 資料表定義"""
-    __tablename__ = "formulas"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    department_id = Column(
-        Integer, ForeignKey("departments.id", ondelete="CASCADE"), nullable=False
-    )
-    abbreviation = Column(String(50), nullable=True, comment="公式縮寫")
-    name = Column(String(255), nullable=False, index=True)
-    description = Column(String(500), nullable=True)
-    yaml_content = Column(Text, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
-
-    # ── 審核機制欄位 ────────────────────────────────────────
-    status = Column(String(20), nullable=False, default="draft", server_default="draft")
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    reviewed_at = Column(DateTime, nullable=True)
-    review_comment = Column(Text, nullable=True)
-
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-
-    # Relationships
-    department = relationship("DepartmentModel", back_populates="formulas")
-    creator = relationship("UserModel", foreign_keys=[created_by])
-    reviewer = relationship("UserModel", foreign_keys=[reviewed_by])
+from app.models.formulas import FormulaModel
+from app.schema.formulas import FormulaCreate, FormulaUpdate
 
 
 class FormulaRepo:

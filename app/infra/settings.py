@@ -2,6 +2,8 @@
 Settings 模組：使用 pydantic-settings 管理所有環境變數。
 修改環境變數請在 .env 檔案或作業系統環境中設定，無需修改程式碼。
 """
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -11,6 +13,21 @@ class Settings(BaseSettings):
     # 範例：postgresql://user:pass@localhost/db
     #        mysql+pymysql://user:pass@localhost/db
     DATABASE_URL: str = "sqlite:///./app.db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _strip_schema_param(cls, v: str) -> str:
+        """
+        psycopg2 不接受 ?schema= 連線選項（Prisma 風格 URL 常見）。
+        自動移除該參數，避免 ProgrammingError: invalid connection option "schema"。
+        """
+        if not isinstance(v, str) or "schema=" not in v:
+            return v
+        parsed = urlparse(v)
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        params.pop("schema", None)
+        cleaned = urlunparse(parsed._replace(query=urlencode({k: vals[0] for k, vals in params.items()})))
+        return cleaned
 
     # ── Google Gemini ────────────────────────────────────
     GEMINI_API_KEY: str = ""

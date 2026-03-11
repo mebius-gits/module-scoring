@@ -6,7 +6,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from app.common.exceptions import NotFoundException
-from app.models.scoring import FormulaStorageItem
+from app.schema.scoring import FormulaStorageItem
 
 
 # 全局 store，模擬 DB persistence

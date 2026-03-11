@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.auth import get_current_user
 from app.infra.db import get_db
-from app.models.items import ItemCreate, ItemResponse, ItemUpdate
+from app.schema.items import ItemCreate, ItemResponse, ItemUpdate
 from app.repositories.item_repo import ItemRepo
 from app.repositories.user_repo import UserModel
 from app.services.item_service import ItemService

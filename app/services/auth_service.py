@@ -3,7 +3,7 @@ Auth Service：封裝使用者註冊、登入的商業邏輯。
 """
 from app.common.auth import create_access_token, hash_password, verify_password
 from app.common.exceptions import NotFoundException, UnauthorizedException, ValidationException
-from app.models.users import UserCreate, UserResponse, TokenResponse
+from app.schema.users import UserCreate, UserResponse, TokenResponse
 from app.repositories.user_repo import UserRepo
 
 

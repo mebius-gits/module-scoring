@@ -30,10 +30,10 @@ from app.infra.settings import settings as _settings
 
 # ── 確保所有 ORM Model 在 Base.metadata 中註冊 ─────────────────
 from app.infra.db import Base, engine, SessionLocal
-from app.repositories.department_repo import DepartmentModel  # noqa: F401
-from app.repositories.formula_repo import FormulaModel  # noqa: F401
-from app.repositories.patient_field_repo import PatientFieldModel  # noqa: F401
-from app.repositories.user_repo import UserModel  # noqa: F401
+from app.models.departments import DepartmentModel  # noqa: F401
+from app.models.formulas import FormulaModel  # noqa: F401
+from app.models.patient_fields import PatientFieldModel  # noqa: F401
+from app.models.users import UserModel  # noqa: F401
 
 # ── 開發用：自動建立資料表（正式環境請改用 Alembic）
 Base.metadata.create_all(bind=engine)
@@ -226,7 +226,7 @@ if _settings.ENABLE_SWAGGER_UI:
 
 def _seed_default_patient_fields():
     """若 patient_fields 資料表為空，自動注入預設欄位。"""
-    from app.models.patient_fields import PatientFieldCreate
+    from app.schema.patient_fields import PatientFieldCreate
     from app.repositories.patient_field_repo import PatientFieldRepo
 
     DEFAULT_FIELDS = [

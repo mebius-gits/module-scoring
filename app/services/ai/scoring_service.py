@@ -7,7 +7,7 @@ Scoring Service：Orchestrator 服務層。
 from typing import Dict, Any, List
 
 from app.infra.clients.gemini_client import GeminiClient
-from app.models.scoring import (
+from app.schema.scoring import (
     CalculateScoreRequest,
     ChatResponse,
     ExtractVariablesRequest,

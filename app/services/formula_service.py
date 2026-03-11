@@ -4,7 +4,7 @@ Formula Service：封裝 Formula 的商業邏輯與用例流程。
 from typing import List, Optional
 
 from app.common.exceptions import ForbiddenException, NotFoundException, ValidationException
-from app.models.formulas import FormulaCreate, FormulaResponse, FormulaUpdate
+from app.schema.formulas import FormulaCreate, FormulaResponse, FormulaUpdate
 from app.repositories.department_repo import DepartmentRepo
 from app.repositories.formula_repo import FormulaRepo
 

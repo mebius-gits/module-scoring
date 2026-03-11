@@ -2,25 +2,12 @@
 PatientField Repository：封裝 PatientFields 的 SQLAlchemy ORM Model 與資料存取操作。
 病人欄位名稱登錄（僅存中繼資料，不含實際病人資料）。
 """
-from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.orm import Session
 
-from app.infra.db import Base
-from app.models.patient_fields import PatientFieldCreate, PatientFieldUpdate
-
-
-class PatientFieldModel(Base):
-    """PatientFields ORM 資料表定義"""
-    __tablename__ = "patient_fields"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    field_name = Column(String(100), unique=True, nullable=False, index=True)
-    label = Column(String(255), nullable=True)
-    field_type = Column(String(50), nullable=False, default="float")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+from app.models.patient_fields import PatientFieldModel
+from app.schema.patient_fields import PatientFieldCreate, PatientFieldUpdate
 
 
 class PatientFieldRepo:

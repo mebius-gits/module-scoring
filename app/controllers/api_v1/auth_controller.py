@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.common.auth import get_current_user, require_role
 from app.infra.db import get_db
-from app.models.users import UpdateUserRole, UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schema.users import UpdateUserRole, UserCreate, UserLogin, UserResponse, TokenResponse
 from app.repositories.user_repo import UserModel, UserRepo
 from app.services.auth_service import AuthService
 

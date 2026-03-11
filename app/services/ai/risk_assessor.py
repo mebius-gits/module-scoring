@@ -3,7 +3,7 @@ Risk Assessor Skill：根據全局分數對應風險等級文字。
 """
 from typing import List
 
-from app.models.scoring import RiskLevelDefinition
+from app.schema.scoring import RiskLevelDefinition
 
 
 class RiskAssessor:

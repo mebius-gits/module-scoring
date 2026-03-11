@@ -7,7 +7,7 @@ import operator
 import re
 from typing import Any, Dict, List, Tuple
 
-from app.models.scoring import (
+from app.schema.scoring import (
     ConditionBlock,
     FormulaDefinition,
     ModuleDefinition,

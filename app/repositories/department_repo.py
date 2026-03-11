@@ -1,35 +1,11 @@
 """
 Department Repository：封裝 Departments 的 SQLAlchemy ORM Model 與資料存取操作。
 """
-from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.orm import Session, relationship
-
-from app.infra.db import Base
-from app.models.departments import DepartmentCreate, DepartmentUpdate
-
-
-class DepartmentModel(Base):
-    """Departments ORM 資料表定義"""
-    __tablename__ = "departments"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    name = Column(String(255), unique=True, nullable=False, index=True)
-    description = Column(String(500), nullable=True)
-    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-
-    # Relationship: one department has many formulas
-    formulas = relationship(
-        "FormulaModel", back_populates="department", cascade="all, delete-orphan"
-    )
+from sqlalchemy.orm import Session
+from app.models.departments import DepartmentModel
+from app.schema.departments import DepartmentCreate, DepartmentUpdate
 
 
 class DepartmentRepo:

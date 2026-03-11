@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.common.auth import get_current_user, require_role
 from app.infra.db import get_db
-from app.models.departments import (
+from app.schema.departments import (
     DepartmentCreate,
     DepartmentDetailResponse,
     DepartmentResponse,

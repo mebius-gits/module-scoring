@@ -1,54 +1,28 @@
-"""
-Departments 相關的 Pydantic Schemas（Request / Response）。
-"""
-from datetime import datetime
-from typing import List, Optional
+"""Departments ORM model."""
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy.orm import relationship
 
-
-class DepartmentCreate(BaseModel):
-    """建立 Department 的請求 Body"""
-    name: str = Field(..., min_length=1, max_length=255, description="科別名稱")
-    description: Optional[str] = Field(None, max_length=500, description="科別描述（選填）")
+from app.infra.db import Base
 
 
-class DepartmentUpdate(BaseModel):
-    """更新 Department 的請求 Body（全部欄位均為選填）"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=500)
+class DepartmentModel(Base):
+    """Departments table mapping."""
 
+    __tablename__ = "departments"
 
-class DepartmentResponse(BaseModel):
-    """Department 回應 Schema（不含公式列表）"""
-    id: int
-    name: str
-    description: Optional[str] = None
-    is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), unique=True, nullable=False, index=True)
+    description = Column(String(500), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    model_config = {"from_attributes": True}
-
-
-class FormulaInDepartment(BaseModel):
-    """列出科別時顯示的輕量 formula 資訊"""
-    id: int
-    abbreviation: Optional[str] = None
-    name: str
-    created_at: Optional[datetime] = None
-
-    model_config = {"from_attributes": True}
-
-
-class DepartmentDetailResponse(BaseModel):
-    """Department 詳細回應 Schema（含公式列表）"""
-    id: int
-    name: str
-    description: Optional[str] = None
-    is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    formulas: List[FormulaInDepartment] = []
-
-    model_config = {"from_attributes": True}
+    formulas = relationship(
+        "FormulaModel", back_populates="department", cascade="all, delete-orphan"
+    )

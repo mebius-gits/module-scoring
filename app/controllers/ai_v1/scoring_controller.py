@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.common.auth import require_role
 from app.infra.db import get_db
 from app.infra.clients.gemini_client import GeminiClient
-from app.models.scoring import (
+from app.schema.scoring import (
     ChatRequest,
     ChatResponse,
 )

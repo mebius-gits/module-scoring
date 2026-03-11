@@ -1,52 +1,25 @@
-"""
-Users 相關的 Pydantic Schemas（Request / Response）。
-"""
-from datetime import datetime
-from enum import Enum
-from typing import Optional
+"""Users ORM model."""
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+
+from app.infra.db import Base
 
 
-class UserRole(str, Enum):
-    admin = "admin"
-    reviewer = "reviewer"
-    builder = "builder"
-    user = "user"
+class UserModel(Base):
+    """Users table mapping."""
 
+    __tablename__ = "users"
 
-class UserCreate(BaseModel):
-    """註冊請求"""
-    username: str = Field(..., min_length=3, max_length=50, description="帳號")
-    password: str = Field(..., min_length=6, max_length=128, description="密碼")
-    display_name: Optional[str] = Field(None, max_length=100, description="顯示名稱")
-
-
-class UserLogin(BaseModel):
-    """登入請求"""
-    username: str
-    password: str
-
-
-class UpdateUserRole(BaseModel):
-    """更新使用者角色"""
-    role: UserRole
-
-
-class UserResponse(BaseModel):
-    """使用者回應"""
-    id: int
-    username: str
-    display_name: Optional[str] = None
-    role: UserRole
-    is_active: bool
-    created_at: Optional[datetime] = None
-
-    model_config = {"from_attributes": True}
-
-
-class TokenResponse(BaseModel):
-    """JWT Token 回應"""
-    access_token: str
-    token_type: str = "bearer"
-    user: UserResponse
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    display_name = Column(String(100), nullable=True)
+    role = Column(String(20), nullable=False, default="user")
+    is_active = Column(Boolean, nullable=False, default=True, server_default="1")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )

@@ -4,7 +4,7 @@ PatientField Service：封裝 PatientField 的商業邏輯與用例流程。
 from typing import List
 
 from app.common.exceptions import NotFoundException
-from app.models.patient_fields import (
+from app.schema.patient_fields import (
     PatientFieldCreate,
     PatientFieldResponse,
     PatientFieldUpdate,

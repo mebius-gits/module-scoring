@@ -3,7 +3,7 @@ AST Converter：將新的 ScoringYamlSchema 轉換為舊版 Blockly 相容的 JS
 """
 from typing import Any, Dict
 
-from app.models.scoring import ScoringYamlSchema
+from app.schema.scoring import ScoringYamlSchema
 
 
 class AstConverter:

@@ -4,7 +4,7 @@ Department Service：封裝 Department 的商業邏輯與用例流程。
 from typing import List
 
 from app.common.exceptions import NotFoundException
-from app.models.departments import (
+from app.schema.departments import (
     DepartmentCreate,
     DepartmentDetailResponse,
     DepartmentResponse,

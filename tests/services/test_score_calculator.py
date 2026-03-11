@@ -11,7 +11,7 @@ from app.services.ai.yaml_parser import YamlParser
 from app.services.ai.score_calculator import ScoreCalculator
 from app.services.ai.risk_assessor import RiskAssessor
 from app.services.ai.scoring_service import ScoringService
-from app.models.scoring import (
+from app.schema.scoring import (
     CalculateScoreRequest,
     ConditionBlock,
     FormulaDefinition,

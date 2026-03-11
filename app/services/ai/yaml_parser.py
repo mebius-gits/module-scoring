@@ -5,7 +5,7 @@ YAML Parser Engine：解析 YAML 字串並驗證為 ScoringYamlSchema。
 import yaml
 
 from app.common.exceptions import ValidationException
-from app.models.scoring import (
+from app.schema.scoring import (
     ConditionBlock,
     FormulaDefinition,
     ModuleDefinition,

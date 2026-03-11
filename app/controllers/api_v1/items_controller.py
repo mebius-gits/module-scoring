@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.infra.db import get_db
-from app.models.items import ItemCreate, ItemResponse, ItemUpdate
+from app.schema.items import ItemCreate, ItemResponse, ItemUpdate
 from app.repositories.item_repo import ItemRepo
 from app.services.item_service import ItemService
 

@@ -5,7 +5,7 @@ Item Service：封裝 Item 的商業邏輯與用例流程。
 from typing import List
 from sqlalchemy.orm import Session
 
-from app.models.items import ItemCreate, ItemResponse, ItemUpdate
+from app.schema.items import ItemCreate, ItemResponse, ItemUpdate
 from app.repositories.item_repo import ItemRepo
 from app.common.exceptions import NotFoundException
 

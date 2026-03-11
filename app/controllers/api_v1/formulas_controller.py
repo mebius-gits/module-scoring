@@ -9,14 +9,14 @@ from sqlalchemy.orm import Session
 
 from app.common.auth import get_current_user, require_role
 from app.infra.db import get_db
-from app.models.formulas import FormulaCreate, FormulaResponse, FormulaUpdate, ReviewAction
+from app.schema.formulas import FormulaCreate, FormulaResponse, FormulaUpdate, ReviewAction
 from app.repositories.department_repo import DepartmentRepo
 from app.repositories.formula_repo import FormulaRepo
 from app.repositories.user_repo import UserModel
 from app.services.formula_service import FormulaService
 
 # Imports for calculate and extract-variables
-from app.models.scoring import (
+from app.schema.scoring import (
     CalculateScoreRequest,
     ScoreResponse,
     ExtractVariablesRequest,
