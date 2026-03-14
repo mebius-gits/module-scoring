@@ -31,10 +31,9 @@ from app.infra.settings import settings as _settings
 
 # ── 確保所有 ORM Model 在 Base.metadata 中註冊 ─────────────────
 from app.infra.db import SessionLocal, engine
-from app.models.departments import DepartmentModel  # noqa: F401
-from app.models.formulas import FormulaModel  # noqa: F401
-from app.models.patient_fields import PatientFieldModel  # noqa: F401
-from app.models.users import UserModel  # noqa: F401
+from app.models import load_all_models
+
+load_all_models()
 
 # ── 建立 FastAPI App（關閉預設 docs，改用自訂版本選單）──────────
 app = FastAPI(

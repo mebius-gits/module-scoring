@@ -15,7 +15,7 @@ class UserModel(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     display_name = Column(String(100), nullable=True)
-    role = Column(String(20), nullable=False, default="user")
+    role = Column(String(20), nullable=False, default="user", server_default="user")
     is_active = Column(Boolean, nullable=False, default=True, server_default="1")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
