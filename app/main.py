@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import inspect
 
 from app.common.exceptions import (
     ForbiddenException,
@@ -29,14 +30,11 @@ from app.controllers.api_v2 import items_controller as items_v2_controller
 from app.infra.settings import settings as _settings
 
 # ── 確保所有 ORM Model 在 Base.metadata 中註冊 ─────────────────
-from app.infra.db import Base, engine, SessionLocal
+from app.infra.db import SessionLocal, engine
 from app.models.departments import DepartmentModel  # noqa: F401
 from app.models.formulas import FormulaModel  # noqa: F401
 from app.models.patient_fields import PatientFieldModel  # noqa: F401
 from app.models.users import UserModel  # noqa: F401
-
-# ── 開發用：自動建立資料表（正式環境請改用 Alembic）
-Base.metadata.create_all(bind=engine)
 
 # ── 建立 FastAPI App（關閉預設 docs，改用自訂版本選單）──────────
 app = FastAPI(
@@ -221,13 +219,17 @@ if _settings.ENABLE_SWAGGER_UI:
         return _build_filtered_openapi("v2", request.scope.get("root_path", ""))
 
 
-# ── Startup Event：建表 + Seed 預設病人欄位 ─────────────────────
+# ── Startup Event：Seed 預設病人欄位 ───────────────────────────
 
 
 def _seed_default_patient_fields():
     """若 patient_fields 資料表為空，自動注入預設欄位。"""
     from app.schema.patient_fields import PatientFieldCreate
     from app.repositories.patient_field_repo import PatientFieldRepo
+
+    # 若尚未執行 Alembic migration，跳過 seed 避免啟動失敗
+    if not inspect(engine).has_table("patient_fields"):
+        return
 
     DEFAULT_FIELDS = [
         PatientFieldCreate(field_name="age",         label="年齡 (歲)",      field_type="int"),
