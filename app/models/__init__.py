@@ -1,5 +1,6 @@
 """Centralized ORM model imports for metadata registration."""
 
+from app.models.ai_chat import AiChatMessageModel, AiChatSessionModel
 from app.models.departments import DepartmentModel
 from app.models.formulas import FormulaModel
 from app.models.items import ItemModel
@@ -12,6 +13,8 @@ def load_all_models() -> None:
 
 
 __all__ = [
+    "AiChatMessageModel",
+    "AiChatSessionModel",
     "DepartmentModel",
     "FormulaModel",
     "ItemModel",

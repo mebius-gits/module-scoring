@@ -39,7 +39,7 @@ class YamlParser:
         if not isinstance(raw, dict):
             raise ValidationException("YAML 頂層必須是 dict 結構")
 
-        score_name = raw.get("score_name") or raw.get("scorename") or raw.get("score", "Unnamed Score")
+        score_name = raw.get("score_name") or raw.get("scorename") or raw.get("score")
         raw["score_name"] = score_name
 
         try:

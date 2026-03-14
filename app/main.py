@@ -25,6 +25,7 @@ from app.controllers.api_v1 import departments_controller
 from app.controllers.api_v1 import formulas_controller
 from app.controllers.api_v1 import patient_fields_controller
 from app.controllers.ai_v1 import scoring_controller
+from app.controllers.ai_v2 import scoring_controller as scoring_v2_controller
 from app.controllers.api_v2 import items_controller as items_v2_controller
 
 from app.infra.settings import settings as _settings
@@ -90,6 +91,7 @@ app.include_router(scoring_controller.router)
 
 # V2：Items
 app.include_router(items_v2_controller.router)
+app.include_router(scoring_v2_controller.router)
 
 
 # ── 版本分組定義 ─────────────────────────────────────────────
@@ -102,7 +104,7 @@ _VERSION_SPECS = {
     },
     "v2": {
         "title": "Module Scoring API - V2",
-        "description": "Items CRUD",
+        "description": "Items CRUD + AI Chat V2",
         "version": "2.0.0",
         "path_prefixes": ["/v2/"],
     },
@@ -192,7 +194,7 @@ def _build_swagger_html(root_path: str = "") -> str:
 SwaggerUIBundle({{
     urls: [
         {{url: "{root_path}/openapi-v1.json", name: "V1 - Scoring System"}},
-        {{url: "{root_path}/openapi-v2.json", name: "V2 - Items"}}
+        {{url: "{root_path}/openapi-v2.json", name: "V2 - Items / AI Chat"}}
     ],
     "urls.primaryName": "V1 - Scoring System",
     dom_id: "#swagger-ui",

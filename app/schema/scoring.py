@@ -3,7 +3,7 @@ Scoring YAML Schema - Pydantic Models。
 定義 YAML 公式模板的完整結構：score_name, modules (variables, formulas, rules), risk_levels。
 同時包含 API 請求/回應 Schema。
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -147,6 +147,48 @@ class ChatResponse(BaseModel):
     )
     generated_yaml: Optional[str] = Field(
         None, description="若 AI 判斷為公式請求，回傳生成的 YAML 公式字串"
+    )
+
+
+class ChatV2Request(BaseModel):
+    """V2 AI chat request with memory and YAML revision support."""
+
+    message: str = Field(
+        ...,
+        min_length=1,
+        description="使用者本次輸入內容。",
+    )
+    session_id: Optional[int] = Field(
+        None,
+        description="既有聊天 session id；首次呼叫可省略。",
+    )
+    yaml_content: Optional[str] = Field(
+        None,
+        description="要修改的既有 YAML；未提供時會回退到 session 記憶中的最後一版 YAML。",
+    )
+    memory_window: int = Field(
+        10,
+        ge=0,
+        le=20,
+        description="帶入 prompt 的歷史訊息數量上限。",
+    )
+    attachments: Optional[List[FileAttachment]] = Field(
+        None,
+        description="本次聊天的附加參考檔案。",
+    )
+
+
+class ChatV2Response(ChatResponse):
+    """V2 AI chat response with session metadata."""
+
+    session_id: int = Field(..., description="本次對話所屬的 session id。")
+    yaml_source: Literal["none", "request", "memory"] = Field(
+        ...,
+        description="本次給 AI 參考的 YAML 來源。",
+    )
+    memory_message_count: int = Field(
+        0,
+        description="本次帶入 prompt 的歷史訊息數量。",
     )
 
 

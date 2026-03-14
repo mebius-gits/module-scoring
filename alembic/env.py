@@ -25,7 +25,7 @@ load_all_models()
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 target_metadata = Base.metadata
-IGNORED_TABLES = {"ai_chat_messages", "ai_chat_sessions"}
+IGNORED_TABLES = set()
 
 
 def include_object(object_, name, type_, reflected, compare_to):
